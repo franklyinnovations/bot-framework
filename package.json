@@ -1,7 +1,7 @@
 {
-  "name": "fyndbot",
+  "name": "botler",
   "version": "1.0.0",
-  "description": "Bot framework",
+  "description": "Bot framework for contextual chatbots",
   "main": "lib/index.js",
   "bin" : {
     "generate-classifiers" : "./lib/generate-classifiers.js"
@@ -14,8 +14,12 @@
   "keywords": [
     "bot"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fyndme/bot-framework.git"
+  },
   "author": "Adam Juhasz",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "bluebird": "^3.3.5",
     "lodash": "^4.11.0",

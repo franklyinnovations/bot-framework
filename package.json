@@ -1,0 +1,26 @@
+{
+  "name": "fyndbot",
+  "version": "1.0.0",
+  "description": "Bot framework",
+  "main": "lib/index.js",
+  "typings": "lib/index",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "bot"
+  ],
+  "author": "Adam Juhasz",
+  "license": "ISC",
+  "dependencies": {
+    "bluebird": "^3.3.5",
+    "lodash": "^4.11.0",
+    "natural": "^0.4.0",
+    "nlp_compromise": "^6.2.1",
+    "request-promise": "^2.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^1.8.10",
+    "typings": "^1.0.4"
+  }
+}

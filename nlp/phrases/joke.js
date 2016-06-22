@@ -1,0 +1,6 @@
+module.exports = [
+  'tell me a joke',
+  'joke',
+  'be funny',
+  'make me laugh',
+];

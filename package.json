@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "description": "Bot framework",
   "main": "lib/index.js",
+  "bin" : {
+    "generate-classifiers" : "./lib/generate-classifiers.js"
+  },
   "typings": "lib/index",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublish": "rm -rf ./lib/ && tsc --project ./src/ && node ./lib/generate-classifiers ./nlp/phrases"
   },
   "keywords": [
     "bot"
@@ -22,5 +26,6 @@
   "devDependencies": {
     "typescript": "^1.8.10",
     "typings": "^1.0.4"
-  }
+  },
+  "private": true
 }

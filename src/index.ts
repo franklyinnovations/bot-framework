@@ -8,7 +8,7 @@ const tokenizer = new natural.WordTokenizer();
 
 import { grabTopics } from './helpers';
 
-const saved = JSON.parse(fs.readFileSync('./bot/nlp/classifiers.json', 'utf8'));
+const saved = JSON.parse(fs.readFileSync(`${__dirname}/../nlp/classifiers.json`, 'utf8'));
 const classifiers = _.mapValues(saved, archived => {
   return natural.BayesClassifier.restore(JSON.parse(archived));
 });

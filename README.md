@@ -24,7 +24,7 @@ Just make a directory of Javascript files that each are named for the intent and
 module.exports = [ 'what\'s the weather in', 'weather', 'tell me the forecast'];
 ```
 ```bash
-$ generate-classifiers .\nlp\phrases\
+$ generate-classifiers ./nlp/phrases/
 ```
 
 ## Installation
@@ -41,11 +41,11 @@ import { User, Intent } from 'botler';
 
 ### Adding weather based phrase detection
 ```bash
-$ generate-classifiers .\nlp\phrases\
+$ generate-classifiers ./nlp/phrases
 ```
 ```typescript
 //teach bot about weather
-const bot = new Botler(['.\nlp\classifiers.json']);
+const bot = new Botler(['./nlp/classifiers.json']);
 
 function weatherSkill(user: User): Promise<User> {
   if (user.intent.action === 'weather') {

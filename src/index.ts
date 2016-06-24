@@ -9,12 +9,12 @@ const tokenizer = new natural.WordTokenizer();
 import { grabTopics } from './helpers';
 
 const saved = JSON.parse(fs.readFileSync(`${__dirname}/../nlp/classifiers.json`, 'utf8'));
-const classifiers = _.mapValues(saved, archived => {
+let classifiers = _.mapValues(saved, archived => {
   return natural.BayesClassifier.restore(JSON.parse(archived));
 });
 
 export interface Intent {
-  request: string,
+  action: string,
   details?: any,
 }
 
@@ -41,7 +41,15 @@ export default class ChatBot {
   private skills: Array<SkillFunction>;
   private reducer: Reducer;
 
-  constructor() {
+  constructor(classifierFiles: Array<string> = []) {
+    classifierFiles.forEach(filename => {
+      const unpacked = JSON.parse(fs.readFileSync(filename, 'utf8'));
+      const newClassifiers = _.mapValues(unpacked, archived => {
+        return natural.BayesClassifier.restore(JSON.parse(archived));
+      });
+      classifiers = _.defaults(classifiers, newClassifiers);
+    })
+    // console.log(_.keys(classifiers));
     this.intents = [ baseBotTextNLP, grabTopics ];
     this.skills = [];
     this.reducer = defaultReducer;
@@ -59,7 +67,7 @@ export default class ChatBot {
     this.reducer = newReducer;
   }
 
-  public processResponse<U extends User>(user:U, text:string): Promise<U> {
+  public processText<U extends User>(user:U, text:string): Promise<U> {
     if (typeof user.conversation === 'undefined') {
       user.conversation = [];
     }
@@ -97,10 +105,10 @@ export function baseBotTextNLP(text: string): Promise<Intent> {
     return null;
   }
   const sorted = _.orderBy(compacted, ['value'], 'desc');
-  console.log(sorted);
+  // console.log(sorted);
 
   const intent: Intent = {
-    request: sorted[0].label,
+    action: sorted[0].label,
     details: {},
   }
   return Promise.resolve(intent);
@@ -109,14 +117,15 @@ export function baseBotTextNLP(text: string): Promise<Intent> {
 export function defaultReducer(intents: Array<Intent>): Promise<Intent> {
   return Promise.resolve(_.compact(intents))
     .then((validIntents: Array<Intent>) => {
-      console.log(util.inspect(validIntents, { depth: null }));
+      // console.log('validIntents', util.inspect(validIntents, { depth: null }));
       if (validIntents.length === 0) {
-        return { request: 'none' };
+        const unknownIntent: Intent = { action: 'none' };
+        return unknownIntent;
       }
-      const mergedDetails = _.defaults({}, validIntents.map(intent => intent.details));
+      const mergedDetails = _.defaults.apply(this, validIntents.map(intent => intent.details));
       const firstIntent = validIntents[0];
       firstIntent.details = mergedDetails;
-      console.log(firstIntent);
+      // console.log(firstIntent);
       return firstIntent;
     })
 }

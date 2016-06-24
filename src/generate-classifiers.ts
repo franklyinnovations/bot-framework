@@ -7,13 +7,13 @@ const natural = require('natural');
 const _ = require('lodash');
 const fs = require('fs');
 
-export function GenerateClassifier(directory: string) {
+export function GenerateClassifier(directories: Array<string>) {
   const phrases = {};
-  fs.readdirSync(directory).forEach(file => {
+  directories.forEach(directory => fs.readdirSync(directory).forEach(file => {
     const key = /(.*).js/.exec(file);
     console.log(`loading '${key[1]}'`);
     phrases[key[1]] = require(`${process.cwd()}/${directory}/${file}`);
-  });
+  }));
 
   const allPhrases = _.flatten(_.values(phrases));
 
@@ -28,11 +28,12 @@ export function GenerateClassifier(directory: string) {
   });
 
   const saveable = _.mapValues(classifiers, classifier => JSON.stringify(classifier));
-  fs.writeFile(`${directory}/../classifiers.json`, JSON.stringify(saveable), 'utf8');
+  fs.writeFile(`classifiers.json`, JSON.stringify(saveable), 'utf8');
 }
 
 if (process.argv.length > 2) {
-  GenerateClassifier(process.argv[2]);
+  const directories = process.argv.slice(2);
+  GenerateClassifier([].concat(directories));
 } else {
   console.error('Need directory to read phrases from');
 }

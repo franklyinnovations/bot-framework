@@ -8,8 +8,9 @@ export interface Topics {
 
 export function grabTopics(text: string): Promise<Intent> {
   const nlpProcessed = nlp.text(text);
+  // console.log('nlpProcessed', nlpProcessed);
   return Promise.resolve({
-    request: null,
+    action: null,
     details: {
       people: nlpProcessed.people(),
       places: nlpProcessed.places(),

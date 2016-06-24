@@ -1,5 +1,5 @@
 export interface Intent {
-    request: string;
+    action: string;
     details?: any;
 }
 export interface User {
@@ -20,11 +20,11 @@ export default class ChatBot {
     private intents;
     private skills;
     private reducer;
-    constructor();
+    constructor(classifierFiles?: Array<string>);
     unshiftIntent(newIntent: IntentFunction): void;
     unshiftSkill(newSkill: SkillFunction): void;
     setReducer(newReducer: Reducer): void;
-    processResponse<U extends User>(user: U, text: string): Promise<U>;
+    processText<U extends User>(user: U, text: string): Promise<U>;
 }
 export declare function baseBotTextNLP(text: string): Promise<Intent>;
 export declare function defaultReducer(intents: Array<Intent>): Promise<Intent>;

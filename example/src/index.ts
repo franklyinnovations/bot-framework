@@ -1,51 +1,7 @@
-# Botler - build contextual chat bots
+import Botler from '../../lib/';
+import { User, Intent } from '../../lib';
 
-Botler was developed to let [fynd](https://fynd.me) build a contextual-aware chatbot to be everyone's favorite personal shopper. We found that many chatbots and pre-exisiting chatbot frameworks were fine at simple action => response behavior, but weren't great at using contextual clues to prove a more fluid experience.
-
-A second goal of Botler was to provide as much general out-of-the-box language functionality as possible. We shouldn't keep reiventing the NLP wheel.
-
-## Components
-Botler uses three components to build a bot, **intents**, **actions** and the **reducer**.
-* **Intents** take a text input (and potential the conversation so far) and return the intent of the user, for example "tell me weather in London" maps to {action:'weather', details:{ location: 'London' } }
-* **Actions** take intents and the state of the conversation to run an action such as querying an API and sending the results to the user
-* The **Reducer** takes multiple intents and reduces it to the correct one
-
-## Built-in functionality
-Botler comes with a few key intents already installed. Some are
-* help for example if the user types "help", "instruction", etc
-* yes
-* no
-* hello
-
-## Adding new phrases
-Just make a directory of Javascript files that each are named for the intent and export an array of strings representing that phrase and run the baysian classifier engine locally.
-```javascript
-/// nlp\phrases\weather.js
-module.exports = [ 'what\'s the weather in', 'weather', 'tell me the forecast'];
-```
-```bash
-$ generate-classifiers ./nlp/phrases/
-```
-
-## Installation
-```bash
-$ npm install --save botler
-```
-
-## Weather Bot Example
-### Import
-```typescript
-const Botler = require('botler');
-import { User, Intent } from 'botler';
-```
-
-### Adding weather based phrase detection
-```bash
-$ generate-classifiers ./nlp/phrases ./node_modules/botler/nlp/phrases
-```
-```typescript
-//teach bot about weather
-const bot = new Botler(['./nlp/classifiers.json']);
+const bot = new Botler([`${__dirname}/../nlp/classifiers.json`]);
 
 function weatherSkill(user: User): Promise<User> {
   if (user.state === 'city'
@@ -69,10 +25,7 @@ function weatherSkill(user: User): Promise<User> {
   }
   return null;  //return null if skill can't process intent;
 }
-```
 
-### Adding new actions for basic built-in bot functionarly
-```typescript
 function confusedSkill(user: User): Promise<User> {
   console.log(`I'm confused, user intent was ${user.intent.action}`);
   return Promise.resolve(user);
@@ -115,10 +68,7 @@ function chatSkill(user: User): Promise<User> {
 bot.unshiftSkill(confusedSkill);
 bot.unshiftSkill(chatSkill);
 bot.unshiftSkill(weatherSkill);
-```
 
-### Run user input
-```typescript
 const emptyUser: User = {
   state: 'none',
   intent: {
@@ -144,4 +94,3 @@ bot.processText(emptyUser, 'hi')
     console.log('- what\'s the weather in London?');
     return bot.processText(user, 'what\'s the weather in London?');
   });
-```

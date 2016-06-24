@@ -7,8 +7,9 @@ A second goal of Botler was to provide as much general out-of-the-box language f
 ## Components
 Botler uses three components to build a bot, **intents**, **actions** and the **reducer**.
 * **Intents** take a text input (and potential the conversation so far) and return the intent of the user, for example "tell me weather in London" maps to {action:'weather', details:{ location: 'London' } }
-* **Actions** take intents and the state of the conversation to run an action such as querying an API and sending the results to the user
+* **Skills** take intents and the state of the conversation to run an action such as querying an API and sending the results to the user
 * The **Reducer** takes multiple intents and reduces it to the correct one
+* The **User** is a simple object the holds the current state, detected intent, and conversation (if intents require rocessing of the entire conversation). It is easily entended by adding more keys to hold application specific info (such as a unique user id).
 
 ## Built-in functionality
 Botler comes with a few key intents already installed. Some are
@@ -16,23 +17,36 @@ Botler comes with a few key intents already installed. Some are
 * yes
 * no
 * hello
-
-## Adding new phrases
-Just make a directory of Javascript files that each are named for the intent and export an array of strings representing that phrase and run the baysian classifier engine locally.
-```javascript
-/// nlp\phrases\weather.js
-module.exports = [ 'what\'s the weather in', 'weather', 'tell me the forecast'];
-```
-```bash
-$ generate-classifiers ./nlp/phrases/
-```
+* *many more...*
 
 ## Installation
 ```bash
 $ npm install --save botler
 ```
+## User object
+
+## Intents
+A function that takes the currently input text and the user object and returns an intent through a promise. The intent was chosen to be promise based in case it needs to make a call to another process or web api. For example, fyndbot queries the fynd suggestion api to detect if any fashion dna was entered by the user.
+
+## Skills
+A function that takes a user object and returns a promise. Skills most likely will read in the intent and state of the user and decide to run an action, an api call for example.
+
+## Reducer
+The reducer takes all array of results and returns a single intent. The default reducer takes the first intent that returns a valid action and then merges all the intents' details, this allowes intents to become small modules. For example, out of the box, a 'topic intent' is always run that tries to extract people and places from the text stream.
+
+## Adding new phrases
+Just make a directory of Javascript files that each are named for the intent and export an array of strings representing that phrase and run the baysian classifier engine locally.
+```javascript
+/// nlp/phrases/weather.js
+module.exports = [ 'what\'s the weather in', 'weather', 'tell me the forecast'];
+```
+```bash
+$ generate-classifiers ./nlp/phrases/ ./node_modules/botler/nlp/phrases
+```
 
 ## Weather Bot Example
+A weather chatbot in less than 100 lines!
+
 ### Import
 ```typescript
 const Botler = require('botler');

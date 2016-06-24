@@ -1,4 +1,4 @@
-# Botler - build contextual chat bots
+# Botler - Build contextual chat bots
 
 Botler was developed to let [fynd](https://fynd.me) build a contextual-aware chatbot to be everyone's favorite personal shopper. We found that many chatbots and pre-exisiting chatbot frameworks were fine at simple action => response behavior, but weren't great at using contextual clues to prove a more fluid experience.
 
@@ -26,13 +26,21 @@ $ npm install --save botler
 ## User object
 
 ## Intents
+An intent is something the user wants done.
+
 A function that takes the currently input text and the user object and returns an intent through a promise. The intent was chosen to be promise based in case it needs to make a call to another process or web api. For example, fyndbot queries the fynd suggestion api to detect if any fashion dna was entered by the user.
 
+## Reducer
+Pick the right intent to pass on.
+
+The reducer takes all array of results and returns a single intent. The default reducer takes the first intent that returns a valid action and then merges all the intents' details, this allowes intents to become small modules. For example, out of the box, a 'topic intent' is always run that tries to extract people and places from the text stream.
+
+
 ## Skills
+A skill is something the bot knows how to do.
+
 A function that takes a user object and returns a promise. Skills most likely will read in the intent and state of the user and decide to run an action, an api call for example.
 
-## Reducer
-The reducer takes all array of results and returns a single intent. The default reducer takes the first intent that returns a valid action and then merges all the intents' details, this allowes intents to become small modules. For example, out of the box, a 'topic intent' is always run that tries to extract people and places from the text stream.
 
 ## Adding new phrases
 Just make a directory of Javascript files that each are named for the intent and export an array of strings representing that phrase and run the baysian classifier engine locally.

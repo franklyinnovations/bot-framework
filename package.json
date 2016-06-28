@@ -9,7 +9,7 @@
   "typings": "lib/index",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublish": "rm -rf ./lib/ && tsc --project ./src/ && node ./lib/generate-classifiers ./nlp/phrases"
+    "prepublish": "tsc --project ./src/"
   },
   "keywords": [
     "bot"

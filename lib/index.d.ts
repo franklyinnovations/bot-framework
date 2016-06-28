@@ -20,10 +20,12 @@ export default class ChatBot {
     private intents;
     private skills;
     private reducer;
+    private debugOn;
     constructor(classifierFiles?: Array<string>);
     unshiftIntent(newIntent: IntentFunction): void;
     unshiftSkill(newSkill: SkillFunction): void;
     setReducer(newReducer: Reducer): void;
+    turnOnDebug(): void;
     processText<U extends User>(user: U, text: string): Promise<U>;
 }
 export declare function baseBotTextNLP(text: string): Promise<Intent>;

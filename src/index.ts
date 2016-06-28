@@ -40,6 +40,7 @@ export default class ChatBot {
   private intents: Array<IntentFunction>;
   private skills: Array<SkillFunction>;
   private reducer: Reducer;
+  private debugOn: Boolean;
 
   constructor(classifierFiles: Array<string> = []) {
     classifierFiles.forEach(filename => {
@@ -53,6 +54,7 @@ export default class ChatBot {
     this.intents = [ baseBotTextNLP, grabTopics ];
     this.skills = [];
     this.reducer = defaultReducer;
+    this.debugOn = false;
   }
 
   public unshiftIntent(newIntent: IntentFunction): void {
@@ -65,6 +67,10 @@ export default class ChatBot {
 
   public setReducer(newReducer: Reducer): void {
     this.reducer = newReducer;
+  }
+
+  public turnOnDebug(): void {
+    this.debugOn = true;
   }
 
   public processText<U extends User>(user:U, text:string): Promise<U> {
@@ -117,7 +123,7 @@ export function baseBotTextNLP(text: string): Promise<Intent> {
 export function defaultReducer(intents: Array<Intent>): Promise<Intent> {
   return Promise.resolve(_.compact(intents))
     .then((validIntents: Array<Intent>) => {
-      // console.log('validIntents', util.inspect(validIntents, { depth: null }));
+      if (this.debugOn) console.log('validIntents', util.inspect(validIntents, { depth: null }));
       if (validIntents.length === 0) {
         const unknownIntent: Intent = { action: 'none' };
         return unknownIntent;
@@ -125,7 +131,7 @@ export function defaultReducer(intents: Array<Intent>): Promise<Intent> {
       const mergedDetails = _.defaults.apply(this, validIntents.map(intent => intent.details));
       const firstIntent = validIntents[0];
       firstIntent.details = mergedDetails;
-      // console.log(firstIntent);
+      if (this.debugOn) console.log(firstIntent);
       return firstIntent;
     })
 }

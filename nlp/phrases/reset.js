@@ -3,5 +3,5 @@ module.exports = [
   'start over',
   'start again',
   'restart',
-  'new search'
+  'new search',
 ];

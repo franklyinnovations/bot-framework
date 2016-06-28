@@ -51,22 +51,22 @@ export default class ChatBot {
       classifiers = _.defaults(classifiers, newClassifiers);
     })
     // console.log(_.keys(classifiers));
-    this.intents = [ baseBotTextNLP, grabTopics ];
+    this.intents = [ baseBotTextNLP.bind(this), grabTopics.bind(this) ];
     this.skills = [];
-    this.reducer = defaultReducer;
+    this.reducer = defaultReducer.bind(this);
     this.debugOn = false;
   }
 
   public unshiftIntent(newIntent: IntentFunction): void {
-    this.intents = [].concat(newIntent, this.intents);
+    this.intents = [].concat(newIntent.bind(this), this.intents);
   }
 
   public unshiftSkill(newSkill: SkillFunction): void {
-    this.skills = [].concat(newSkill, this.skills);
+    this.skills = [].concat(newSkill.bind(this), this.skills);
   }
 
   public setReducer(newReducer: Reducer): void {
-    this.reducer = newReducer;
+    this.reducer = newReducer.bind(this);
   }
 
   public turnOnDebug(): void {
@@ -97,6 +97,7 @@ export default class ChatBot {
 export function baseBotTextNLP(text: string): Promise<Intent> {
   const filtered = _.map(classifiers, (classifier, key) => {
     const result = classifier.getClassifications(text)[0];
+    if (this.debugOn) console.log(key, result);
     if (result.label === 'false') {
       return null;
     }
@@ -111,7 +112,7 @@ export function baseBotTextNLP(text: string): Promise<Intent> {
     return null;
   }
   const sorted = _.orderBy(compacted, ['value'], 'desc');
-  // console.log(sorted);
+  if (this.debugOn) console.log(sorted);
 
   const intent: Intent = {
     action: sorted[0].label,

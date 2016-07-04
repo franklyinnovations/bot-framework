@@ -3,8 +3,8 @@
   "version": "1.0.3",
   "description": "Bot framework for contextual chatbots",
   "main": "lib/index.js",
-  "bin" : {
-    "generate-classifiers" : "./lib/generate-classifiers.js"
+  "bin": {
+    "generate-classifiers": "./lib/generate-classifiers.js"
   },
   "typings": "lib/index",
   "scripts": {
@@ -28,6 +28,8 @@
     "request-promise": "^2.0.1"
   },
   "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^2.5.3",
     "typescript": "^1.8.10",
     "typings": "^1.0.4"
   },

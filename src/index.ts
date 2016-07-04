@@ -5,13 +5,10 @@ const util = require('util');
 
 const natural = require('natural');
 const tokenizer = new natural.WordTokenizer();
-
+import { classifier, GenerateClassifier } from './classifier';
 import { grabTopics } from './helpers';
 
-const saved = JSON.parse(fs.readFileSync(`${__dirname}/../nlp/classifiers.json`, 'utf8'));
-let classifiers = _.mapValues(saved, archived => {
-  return natural.BayesClassifier.restore(JSON.parse(archived));
-});
+let classifiers = GenerateClassifier([`${__dirname}/../nlp/phrases`]);
 
 export interface Intent {
   action: string,
@@ -41,15 +38,11 @@ export default class ChatBot {
   private skills: Array<SkillFunction>;
   private reducer: Reducer;
   private debugOn: Boolean;
+  public classifiers: any;
 
   constructor(classifierFiles: Array<string> = []) {
-    classifierFiles.forEach(filename => {
-      const unpacked = JSON.parse(fs.readFileSync(filename, 'utf8'));
-      const newClassifiers = _.mapValues(unpacked, archived => {
-        return natural.BayesClassifier.restore(JSON.parse(archived));
-      });
-      classifiers = _.defaults(classifiers, newClassifiers);
-    })
+    const newClassifiers = GenerateClassifier(classifierFiles);
+    this.classifiers = _.defaults(classifiers, newClassifiers);
     // console.log(_.keys(classifiers));
     this.intents = [ baseBotTextNLP.bind(this), grabTopics.bind(this) ];
     this.skills = [];
@@ -97,7 +90,7 @@ export default class ChatBot {
 export function baseBotTextNLP(text: string): Promise<Intent> {
   const filtered = _.map(classifiers, (classifier, key) => {
     const result = classifier.getClassifications(text)[0];
-    if (this.debugOn) console.log(key, result);
+    // if (this && this.debugOn) console.log(key, result);
     if (result.label === 'false') {
       return null;
     }
@@ -107,17 +100,23 @@ export function baseBotTextNLP(text: string): Promise<Intent> {
     };
   });
 
-  const compacted = _.compact(filtered);
+  let compacted = _.compact(filtered);
+  if (classifier === natural.LogisticRegressionClassifier) {
+    compacted = compacted.filter(result => result.value > 0.6);
+  }
   if (compacted.length === 0) {
     return null;
   }
   const sorted = _.orderBy(compacted, ['value'], 'desc');
-  if (this.debugOn) console.log(sorted);
+  if (this && this.debugOn) console.log(text, sorted);
 
   const intent: Intent = {
     action: sorted[0].label,
     details: {},
   }
+
+  if (this && this.debugOn) intent.details.confidence = sorted[0].value;
+
   return Promise.resolve(intent);
 }
 

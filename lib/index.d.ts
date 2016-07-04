@@ -21,6 +21,7 @@ export default class ChatBot {
     private skills;
     private reducer;
     private debugOn;
+    classifiers: any;
     constructor(classifierFiles?: Array<string>);
     unshiftIntent(newIntent: IntentFunction): void;
     unshiftSkill(newSkill: SkillFunction): void;

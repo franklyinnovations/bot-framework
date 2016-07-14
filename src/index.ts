@@ -17,7 +17,7 @@ export interface Intent {
 
 export interface User {
   conversation?: Array<string>,
-  state: string,
+  state: any,
   intent: Intent,
 }
 

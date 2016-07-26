@@ -1,14 +1,25 @@
 "use strict";
 const botler_1 = require('botler');
-const botler_2 = require('botler');
+const util = require('util');
 const bot = new botler_1.default([`${__dirname}/../nlp`]);
 // bot.turnOnDebug();
+//add skills to bot, skills are run all at once, but prioritized first to last
+bot.unshiftSkill(confusedSkill)
+    .unshiftSkill(chatSkill)
+    .unshiftSkill(weatherSkill)
+    .setReducer(weatherReducer);
 function weatherSkill(user) {
+    const weather = ['sunny', 'rainy', 'cloudy'];
     if (user.intent.topic === 'location') {
         const city = user.intent.action.replace('_', ' ');
         user.state = 'none';
-        const weather = ['sunny', 'rainy', 'cloudy'];
         return sendToUser(`the weather in ${city} will be ${weather[Math.floor(Math.random() * weather.length)]}`)
+            .then(() => user);
+    }
+    if (user.intent.topic === 'details' && user.intent.details.value.toString().length === 5) {
+        const zip = user.intent.details.value;
+        user.state = 'none';
+        return sendToUser(`the weather at ${zip} will be ${weather[Math.floor(Math.random() * weather.length)]}`)
             .then(() => user);
     }
     return null; //return null if skill can't process intent;
@@ -19,8 +30,9 @@ function confusedSkill(user) {
         .then(() => user);
 }
 function weatherReducer(intents) {
-    // console.log('intents:', intents);
-    return botler_2.defaultReducer(intents);
+    if (this && this.debugOn)
+        console.log('intents:', util.inspect(intents, { depth: null }));
+    return botler_1.defaultReducer(intents);
 }
 function chatSkill(user) {
     switch (user.intent.action) {
@@ -62,19 +74,8 @@ function receiveFromUser(user, text) {
     console.log(`-> ${text}`);
     return bot.processText(user, text);
 }
-//add skills to bot, skills are run all at once, but prioritized first to last
-bot.unshiftSkill(confusedSkill)
-    .unshiftSkill(chatSkill)
-    .unshiftSkill(weatherSkill)
-    .setReducer(weatherReducer);
 // begin example
-const emptyUser = {
-    state: 'none',
-    intent: {
-        action: 'none',
-        topic: 'none',
-    },
-};
+const emptyUser = bot.createEmptyUser({ apiUserID: 'custom_info' });
 receiveFromUser(emptyUser, 'hi')
     .then((user) => {
     return receiveFromUser(user, 'yes');
@@ -92,5 +93,8 @@ receiveFromUser(emptyUser, 'hi')
     return receiveFromUser(user, 'you\'re the best!');
 })
     .then((user) => {
-    return receiveFromUser(user, 'What\'s the weather in New York, NY');
+    return receiveFromUser(user, 'What\'s the weather in New York, NY tomorrow');
+})
+    .then((user) => {
+    return receiveFromUser(user, 'How about at 10004');
 });

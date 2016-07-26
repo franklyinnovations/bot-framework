@@ -71,6 +71,22 @@ export default class ChatBot {
     return this;
   }
 
+  public createEmptyIntent(): Intent {
+    return {
+      action: null,
+      topic: null,
+      details: {},
+    };
+  }
+
+  public createEmptyUser(defaults: any = {}): User {
+    return _.defaults({
+      conversation: [],
+      state: 'none',
+      intent: this.createEmptyIntent(),
+    }, defaults);
+  }
+
   public processText<U extends User>(user:U, text:string): Promise<U> {
     if (typeof user.conversation === 'undefined') {
       user.conversation = [];
@@ -119,7 +135,7 @@ export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
   });
 
   let compacted: Array<Classification> = _.compact(_.flatten(filtered));
-  if (this && this.debugOn) console.log('compacted', compacted);
+  if (this && this.debugOn) console.log('compacted', util.inspect(compacted, { depth:null }));
 
   if (classifier === natural.LogisticRegressionClassifier) {
     compacted = compacted.filter(result => result.value > 0.6);
@@ -129,7 +145,7 @@ export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
     return null;
   }
   const sorted: Array<Classification> = _.orderBy(compacted, ['value'], 'desc');
-  if (this && this.debugOn) console.log(`${text}\n${sorted}`);
+  if (this && this.debugOn) console.log(`${text}\n${util.inspect(sorted, { depth:null })}`);
 
   const intents: Array<Intent> = sorted.map(intent => ({
     action: intent.label,

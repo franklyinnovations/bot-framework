@@ -28,6 +28,8 @@ export default class ChatBot {
     unshiftSkill(newSkill: SkillFunction): this;
     setReducer(newReducer: Reducer): this;
     turnOnDebug(): this;
+    createEmptyIntent(): Intent;
+    createEmptyUser(defaults?: any): User;
     processText<U extends User>(user: U, text: string): Promise<U>;
 }
 export declare function baseBotTextNLP(text: string): Promise<Array<Intent>>;

@@ -5,8 +5,10 @@ const util = require('util');
 
 const natural = require('natural');
 const tokenizer = new natural.WordTokenizer();
-import { classifier, GenerateClassifier } from './classifier';
+import { classifier, GenerateClassifier, TopicCollection } from './classifier';
 import { grabTopics } from './helpers';
+
+export { TopicCollection } from './classifier';
 
 export interface Intent {
   action: string,
@@ -39,10 +41,9 @@ export default class ChatBot {
   private debugOn: Boolean;
   public classifiers: any;
 
-  constructor(classifierFiles: Array<string> = []) {
-    const builtInClassifiers = GenerateClassifier([`${__dirname}/../nlp/phrases`])
-    const newClassifiers = GenerateClassifier(classifierFiles);
-    this.classifiers = _.defaults(builtInClassifiers, newClassifiers);
+  constructor(classifierFiles: Array<string|TopicCollection> = []) {
+    const allClassifiers = GenerateClassifier(classifierFiles.concat(`${__dirname}/../nlp/phrases`));
+    this.classifiers = allClassifiers;
     // console.log(_.keys(this.classifiers));
     this.intents = [ baseBotTextNLP.bind(this), grabTopics.bind(this) ];
     this.skills = [];
@@ -71,6 +72,11 @@ export default class ChatBot {
     return this;
   }
 
+  public retrainClassifiers(classifierFiles: Array<string|TopicCollection> = []) {
+    const allClassifiers = GenerateClassifier(classifierFiles.concat([`${__dirname}/../nlp/phrases`]));
+    this.classifiers = allClassifiers;
+  }
+
   public createEmptyIntent(): Intent {
     return {
       action: null,
@@ -94,6 +100,7 @@ export default class ChatBot {
     user.conversation = user.conversation.concat(text);
     return Promise.map(this.intents, intent => intent(text, user))
       .then(_.flatten)
+      .then(_.compact)
       .then(this.reducer)
       .then(intent => {
         user.intent = intent;

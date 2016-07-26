@@ -1,0 +1,11 @@
+{
+  "globalDependencies": {
+    "form-data": "registry:dt/form-data#0.0.0+20160724024111",
+    "node": "registry:dt/node#6.0.0+20160608110640",
+    "request": "registry:dt/request#0.0.0+20160724024111",
+    "request-promise": "registry:dt/request-promise#3.0.0+20160628092802"
+  },
+  "dependencies": {
+    "lodash": "registry:npm/lodash#4.0.0+20160723033700"
+  }
+}

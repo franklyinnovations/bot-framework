@@ -2,8 +2,6 @@
 const botler_1 = require('botler');
 const util = require('util');
 const bot = new botler_1.default([`${__dirname}/../nlp`]);
-// bot.turnOnDebug();
-//add skills to bot, skills are run all at once, but prioritized first to last
 bot.unshiftSkill(confusedSkill)
     .unshiftSkill(chatSkill)
     .unshiftSkill(weatherSkill)
@@ -22,16 +20,19 @@ function weatherSkill(user) {
         return sendToUser(`the weather at ${zip} will be ${weather[Math.floor(Math.random() * weather.length)]}`)
             .then(() => user);
     }
-    return null; //return null if skill can't process intent;
+    return null;
 }
 function confusedSkill(user) {
-    // console.log(`I'm confused, user intent was ${user.intent.action}`);
     return sendToUser('I\'m confused')
         .then(() => user);
 }
 function weatherReducer(intents) {
     if (this && this.debugOn)
         console.log('intents:', util.inspect(intents, { depth: null }));
+    const location = intents.filter(intent => intent.topic === 'location');
+    if (location.length > 0) {
+        return Promise.resolve(location[0]);
+    }
     return botler_1.defaultReducer(intents);
 }
 function chatSkill(user) {
@@ -54,16 +55,16 @@ function chatSkill(user) {
                 return sendToUser('Great, what city?')
                     .then(() => user);
             }
-            return null; //return null if skill can't process intent;
+            return null;
         case 'no':
             if (user.state === 'hello') {
                 user.state = 'none';
                 return sendToUser('Why not?')
                     .then(() => user);
             }
-            return null; //return null if skill can't process intent;
+            return null;
         default:
-            return null; //return null if skill can't process intent;
+            return null;
     }
 }
 function sendToUser(text) {
@@ -74,7 +75,6 @@ function receiveFromUser(user, text) {
     console.log(`-> ${text}`);
     return bot.processText(user, text);
 }
-// begin example
 const emptyUser = bot.createEmptyUser({ apiUserID: 'custom_info' });
 receiveFromUser(emptyUser, 'hi')
     .then((user) => {

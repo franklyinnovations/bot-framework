@@ -14,7 +14,6 @@ export function grabTopics(text: string): Promise<Intent> {
     topic: 'details',
     details: {
       people: nlpProcessed.people(),
-      places: nlpProcessed.places(),
       dates: nlpProcessed.dates(),
       value: nlp.value(text).number,
     }

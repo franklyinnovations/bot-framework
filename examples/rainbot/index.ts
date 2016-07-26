@@ -43,6 +43,13 @@ function confusedSkill(user: User): Promise<User> {
 function weatherReducer(intents: Array<Intent>): Promise<Intent> {
   if (this && this.debugOn) console.log('intents:', util.inspect(intents, { depth:null }));
 
+  //if we detect a location, prioritize that intent and return it
+  const location = intents.filter(intent => intent.topic === 'location');
+  if (location.length > 0) {
+    return Promise.resolve(location[0]);
+  }
+
+  //otherwise just do the normal thing
   return defaultReducer(intents);
 }
 
@@ -111,6 +118,7 @@ receiveFromUser(emptyUser, 'hi')
     return receiveFromUser(user, 'what\'s the weather in London?');
   })
   .then((user: User) => {
+    //should cause confusion
     return receiveFromUser(user, 'you\'re the best!');
   })
   .then((user: User) => {

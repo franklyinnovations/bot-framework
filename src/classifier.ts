@@ -1,40 +1,78 @@
 import * as natural from 'natural';
 import * as _ from 'lodash';
+import * as util from 'util';
 const fs = require('fs');
 
+export interface ActionCollection {
+  action: string,
+  phrases: Array<string>,
+}
+
+export interface TopicCollection {
+  topic: string,
+  actions: Array<ActionCollection>,
+}
+
+export interface actionClassifier {
+  [key:string]: natural.LogisticRegressionClassifier
+}
+
+export interface Classifiers {
+  [key:string]: actionClassifier,
+}
 
 export const classifier = natural.LogisticRegressionClassifier;
 // export const classifier = natural.BayesClassifier;
 
-export function GenerateClassifier(directories: Array<string>) {
-  const topics = {};
-  directories.forEach(directory => fs.readdirSync(directory).forEach(topic => {
+export function GenerateClassifier(topicsToLoad: Array<string | TopicCollection>): Classifiers {
+  const topics:Array<TopicCollection> = topicsToLoad.filter(element => typeof element !== 'string') as Array<TopicCollection>;
+  topicsToLoad.filter(directory => typeof directory === 'string').forEach(directory => fs.readdirSync(directory).forEach(topic => {
     const key = topic;
-    // console.log('t:', topic, 'd:', directory);
-    topics[topic] = GenerateTopicClassifier([`${directory}/${topic}`]);
+    topics.push(readInTopic(topic, `${directory}/${topic}`));
   }));
-  return topics;
+  // console.log('t:', util.inspect(topics, {depth:null}));
+  const topicPhrases = topics.map((topic: TopicCollection) => _.flatten(topic.actions.map(action => action.phrases)));
+  const allPhrases: string[] = _.chain(topicPhrases).flatten().flatten().value() as Array<string>;
+  // console.log('ap:', util.inspect(allPhrases, {depth:null}));
+
+  const classifiers: Classifiers = {};
+  topics.forEach(topic => {
+    classifiers[topic.topic] = GenerateTopicClassifier(topic, allPhrases);
+  });
+  // console.log(classifiers);
+  return classifiers;
 }
 
-export function GenerateTopicClassifier(directories: Array<string>) {
-  const phrases = {};
-  directories.forEach(directory => fs.readdirSync(directory).forEach(file => {
+function readInTopic(topic: string, directory: string): TopicCollection {
+  // console.log('dir', directory);
+  const actions = [];
+  fs.readdirSync(directory).forEach(file => {
     const key = /(.*).json/.exec(file);
     // console.log(`loading '${key[1]}'`);
     try {
-      phrases[key[1]] = require(`${directory}/${file}`);
+      const phrases = require(`${directory}/${file}`);
+      actions.push({action: key[1], phrases});
     } catch(err) {
       throw new Error(`Invalid JSON file ${file}`);
     }
-  }));
+  });
+  return {
+    topic,
+    actions,
+  };
+}
 
-  const allPhrases = _.flatten(_.values(phrases)) as Array<string>;
 
-  const classifiers = _.mapValues(phrases, (value: Array<string>, key: string) => { // eslint-disable-line no-unused-vars
+export function GenerateTopicClassifier(topic: TopicCollection, allPhrases: Array<string>) {
+  const classifiers: { [key:string]: natural.LogisticRegressionClassifier } = {};
+  topic.actions.forEach((action: ActionCollection) => { // eslint-disable-line no-unused-vars
+    const phrases = action.phrases
+    const key = action.action;
+
     const thisClassifier = new classifier();
-    const otherPhrases = _.difference(allPhrases, value);
+    const otherPhrases = _.difference(allPhrases, phrases);
     // console.log(value);
-    value.forEach(phrase => thisClassifier.addDocument(phrase, 'true'));
+    phrases.forEach(phrase => thisClassifier.addDocument(phrase, 'true'));
     otherPhrases.forEach(phrase => thisClassifier.addDocument(phrase, 'false'));
     thisClassifier.train();
 
@@ -47,18 +85,20 @@ export function GenerateTopicClassifier(directories: Array<string>) {
       }
       return null;
     });
-    const selfChecked = value.map(phrase => thisClassifier.classify(phrase)).map((classified, index) => {
+
+    const selfChecked = phrases.map(phrase => thisClassifier.classify(phrase)).map((classified, index) => {
       if (classified === 'false') {
         // console.log('self', index, value[index], thisClassifier.getClassifications(value[index]));
-        return value[index];
+        return phrases[index];
       }
       // console.log(value[index], thisClassifier.getClassifications(value[index]));
       return null;
     });
+
     // console.log('other:', otherPhrases.length, '  self:', value.length);
     // console.log('passed for other', _.compact(othersChecked));
     // console.log('failed for home', _.compact(selfChecked));
-    return thisClassifier;
+    classifiers[key] = thisClassifier;
   });
 
   return classifiers;

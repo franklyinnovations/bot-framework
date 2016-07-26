@@ -1,3 +1,5 @@
+import { TopicCollection } from './classifier';
+export { TopicCollection } from './classifier';
 export interface Intent {
     action: string;
     topic: string;
@@ -23,11 +25,12 @@ export default class ChatBot {
     private reducer;
     private debugOn;
     classifiers: any;
-    constructor(classifierFiles?: Array<string>);
+    constructor(classifierFiles?: Array<string | TopicCollection>);
     unshiftIntent(newIntent: IntentFunction): this;
     unshiftSkill(newSkill: SkillFunction): this;
     setReducer(newReducer: Reducer): this;
     turnOnDebug(): this;
+    retrainClassifiers(classifierFiles?: Array<string | TopicCollection>): void;
     createEmptyIntent(): Intent;
     createEmptyUser(defaults?: any): User;
     processText<U extends User>(user: U, text: string): Promise<U>;

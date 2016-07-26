@@ -1,10 +1,9 @@
 {
-  "name": "rainbot",
+  "name": "buzzer",
   "version": "1.0.0",
-  "description": "Weather bot built using botler",
+  "description": "bot built to surf buzzfeed",
   "main": "build/index.js",
-  "scripts": {
-  },
+  "scripts": {},
   "keywords": [
     "bot"
   ],
@@ -15,7 +14,9 @@
   "author": "Adam Juhasz",
   "license": "MIT",
   "dependencies": {
-    "botler": "file:../../"
+    "botler": "file:../../",
+    "lodash": "^4.14.0",
+    "request-promise": "^4.0.2"
   },
   "devDependencies": {
     "typescript": "^1.8.10",

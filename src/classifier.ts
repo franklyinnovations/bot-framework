@@ -7,6 +7,16 @@ export const classifier = natural.LogisticRegressionClassifier;
 // export const classifier = natural.BayesClassifier;
 
 export function GenerateClassifier(directories: Array<string>) {
+  const topics = {};
+  directories.forEach(directory => fs.readdirSync(directory).forEach(topic => {
+    const key = topic;
+    // console.log('t:', topic, 'd:', directory);
+    topics[topic] = GenerateTopicClassifier([`${directory}/${topic}`]);
+  }));
+  return topics;
+}
+
+export function GenerateTopicClassifier(directories: Array<string>) {
   const phrases = {};
   directories.forEach(directory => fs.readdirSync(directory).forEach(file => {
     const key = /(.*).json/.exec(file);

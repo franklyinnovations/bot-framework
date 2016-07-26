@@ -1,14 +1,9 @@
 {
-  "name": "botler",
-  "version": "1.0.3",
-  "description": "Bot framework for contextual chatbots",
+  "name": "rainbot",
+  "version": "1.0.0",
+  "description": "Weather bot built using botler",
   "main": "lib/index.js",
-  "bin": {
-  },
-  "typings": "lib/index",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublish": "tsc --project ./src/"
   },
   "keywords": [
     "bot"
@@ -21,13 +16,9 @@
   "license": "MIT",
   "dependencies": {
     "bluebird": "^3.3.5",
-    "lodash": "^4.11.0",
-    "natural": "^0.4.0",
-    "request-promise": "^2.0.1"
+    "botler": "file:../../"
   },
   "devDependencies": {
-    "chai": "^3.5.0",
-    "mocha": "^2.5.3",
     "typescript": "^1.8.10",
     "typings": "^1.0.4"
   },

@@ -4,7 +4,7 @@
         "target": "ES6",
         "noImplicitAny": false,
         "sourceMap": false,
-        "outDir": "./build",
+        "outDir": "build",
         "declaration": false
     },
     "exclude": [
@@ -12,6 +12,6 @@
     ],
     "files": [
       "typings/index.d.ts",
-      "src/index.ts"
+      "index.ts"
     ]
 }

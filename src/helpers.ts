@@ -11,9 +11,12 @@ export function grabTopics(text: string): Promise<Intent> {
   // console.log('nlpProcessed', nlpProcessed);
   return Promise.resolve({
     action: null,
+    topic: 'details',
     details: {
       people: nlpProcessed.people(),
       places: nlpProcessed.places(),
+      dates: nlpProcessed.dates(),
+      value: nlp.value(text).number,
     }
   });
 }

@@ -8,10 +8,9 @@ const tokenizer = new natural.WordTokenizer();
 import { classifier, GenerateClassifier } from './classifier';
 import { grabTopics } from './helpers';
 
-let classifiers = GenerateClassifier([`${__dirname}/../nlp/phrases`]);
-
 export interface Intent {
   action: string,
+  topic: string,
   details?: any,
 }
 
@@ -41,29 +40,35 @@ export default class ChatBot {
   public classifiers: any;
 
   constructor(classifierFiles: Array<string> = []) {
+    const builtInClassifiers = GenerateClassifier([`${__dirname}/../nlp/phrases`])
     const newClassifiers = GenerateClassifier(classifierFiles);
-    this.classifiers = _.defaults(classifiers, newClassifiers);
-    // console.log(_.keys(classifiers));
+    this.classifiers = _.defaults(builtInClassifiers, newClassifiers);
+    // console.log(_.keys(this.classifiers));
     this.intents = [ baseBotTextNLP.bind(this), grabTopics.bind(this) ];
     this.skills = [];
     this.reducer = defaultReducer.bind(this);
     this.debugOn = false;
+    return this;
   }
 
-  public unshiftIntent(newIntent: IntentFunction): void {
+  public unshiftIntent(newIntent: IntentFunction) {
     this.intents = [].concat(newIntent.bind(this), this.intents);
+    return this;
   }
 
-  public unshiftSkill(newSkill: SkillFunction): void {
+  public unshiftSkill(newSkill: SkillFunction) {
     this.skills = [].concat(newSkill.bind(this), this.skills);
+    return this;
   }
 
-  public setReducer(newReducer: Reducer): void {
+  public setReducer(newReducer: Reducer) {
     this.reducer = newReducer.bind(this);
+    return this;
   }
 
-  public turnOnDebug(): void {
+  public turnOnDebug() {
     this.debugOn = true;
+    return this;
   }
 
   public processText<U extends User>(user:U, text:string): Promise<U> {
@@ -72,6 +77,7 @@ export default class ChatBot {
     }
     user.conversation = user.conversation.concat(text);
     return Promise.map(this.intents, intent => intent(text, user))
+      .then(_.flatten)
       .then(this.reducer)
       .then(intent => {
         user.intent = intent;
@@ -87,37 +93,53 @@ export default class ChatBot {
   }
 }
 
-export function baseBotTextNLP(text: string): Promise<Intent> {
-  const filtered = _.map(classifiers, (classifier, key) => {
-    const result = classifier.getClassifications(text)[0];
-    // if (this && this.debugOn) console.log(key, result);
-    if (result.label === 'false') {
-      return null;
-    }
-    return {
-      label: key,
-      value: result.value,
-    };
+interface Classification {
+  label: string,
+  topic: string,
+  value: number,
+}
+
+function checkUsingClassifier(text: string, classifier: any, label: string, topic: string): Classification {
+  const result = classifier.getClassifications(text)[0];
+  if (result.label === 'false') {
+    return null;
+  }
+  return {
+    label,
+    topic,
+    value: result.value,
+  };
+}
+
+export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
+  const filtered: Array<Array<Classification>> = _.map(this.classifiers, (classifiers, topic) => {
+    const trueClassifications = _.map(classifiers, (classifier, label) => checkUsingClassifier(text, classifier, label, topic));
+    // console.log(topic, trueClassifications);
+    return _.compact(trueClassifications);
   });
 
-  let compacted = _.compact(filtered);
+  let compacted: Array<Classification> = _.compact(_.flatten(filtered));
+  if (this && this.debugOn) console.log('compacted', compacted);
+
   if (classifier === natural.LogisticRegressionClassifier) {
     compacted = compacted.filter(result => result.value > 0.6);
   }
+
   if (compacted.length === 0) {
     return null;
   }
-  const sorted = _.orderBy(compacted, ['value'], 'desc');
-  if (this && this.debugOn) console.log(text, sorted);
+  const sorted: Array<Classification> = _.orderBy(compacted, ['value'], 'desc');
+  if (this && this.debugOn) console.log(`${text}\n${sorted}`);
 
-  const intent: Intent = {
-    action: sorted[0].label,
-    details: {},
-  }
+  const intents: Array<Intent> = sorted.map(intent => ({
+    action: intent.label,
+    topic: intent.topic,
+    details: {
+      confidence: intent.value,
+    },
+  }));
 
-  if (this && this.debugOn) intent.details.confidence = sorted[0].value;
-
-  return Promise.resolve(intent);
+  return Promise.resolve(intents);
 }
 
 export function defaultReducer(intents: Array<Intent>): Promise<Intent> {
@@ -125,7 +147,7 @@ export function defaultReducer(intents: Array<Intent>): Promise<Intent> {
     .then((validIntents: Array<Intent>) => {
       if (this.debugOn) console.log('validIntents', util.inspect(validIntents, { depth: null }));
       if (validIntents.length === 0) {
-        const unknownIntent: Intent = { action: 'none' };
+        const unknownIntent: Intent = { action: 'none', topic: null };
         return unknownIntent;
       }
       const mergedDetails = _.defaults.apply(this, validIntents.map(intent => intent.details));

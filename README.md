@@ -45,7 +45,7 @@ A skill is something the bot knows how to do, for example querying an API endpoi
 [Weather bot examples](./examples/rainbot) (most simple example)  
 [Buzzfeed based news bot w/FB integration](./examples/buzzer) (more complex)  
 
-## A weather chatbot in less than 100 lines!
+## A weather chatbot in less than [100 lines](./examples/rainbot/build/index.js)!
 A weather chatbot in less than 100 lines!
 
 ### First let's teach botler what weather is

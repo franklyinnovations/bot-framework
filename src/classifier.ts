@@ -53,7 +53,7 @@ function readInTopic(topic: string, directory: string): TopicCollection {
       const phrases = require(`${directory}/${file}`);
       actions.push({action: key[1], phrases});
     } catch(err) {
-      throw new Error(`Invalid JSON file ${file}`);
+      throw new Error(`Invalid JSON file ${directory}/${file}`);
     }
   });
   return {

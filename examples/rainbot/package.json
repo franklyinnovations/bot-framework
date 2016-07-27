@@ -4,6 +4,7 @@
   "description": "Weather bot built using botler",
   "main": "build/index.js",
   "scripts": {
+    "start": "node build/index.js"
   },
   "keywords": [
     "bot"

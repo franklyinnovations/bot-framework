@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "bot built to surf buzzfeed",
   "main": "build/index.js",
-  "scripts": {},
+  "scripts": {
+    "start": "node build/index.js"
+  },
   "keywords": [
     "bot"
   ],

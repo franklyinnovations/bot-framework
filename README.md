@@ -26,6 +26,7 @@ Botler comes with a few key intents already installed. Some are
 ```bash
 $ npm install --save botler
 ```
+While private: http://stackoverflow.com/questions/28728665/how-to-use-private-github-repo-as-npm-dependency
 
 ## Examples
 [Weather bot examples](./examples/rainbot) (most simple example)  

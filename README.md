@@ -9,7 +9,7 @@ Another goal of Botler was to provide as much general out-of-the-box language fu
 Botler uses three components to build a bot, **intents**, **actions** and the **reducer**.
 * **[Intents](./doc/intents.md)** take a text input (and potential the conversation so far) and return the intent of the user, for example "tell me weather in London" maps to ```{action:'weather', topic: 'weather, details:{ location: 'London' } }```
 * The **[Reducer](./doc/reducer.md)** takes multiple detected intents and reduces it to the correct one
-* **[Skills](./doc/skills.ms)** take intents and the state of the conversation to run an action such as querying an API and sending the results to the user
+* **[Skills](./doc/skills.md)** take intents and the state of the conversation to run an action such as querying an API and sending the results to the user
 
 ## The User
 The **User** is a simple object the holds the current state, detected intent, and conversation (if intents require rocessing of the entire conversation). It is easily entended by adding more keys to hold application specific info (such as a unique user id to respond to).

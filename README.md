@@ -1,8 +1,9 @@
 # Botler - Build contextual chat bots
 
-Botler was developed to let [fynd](https://fynd.me) build [fyndbot](https://m.me/shopfynd) a contextual-aware chatbot to be everyone's favorite personal shopper. We found that many chatbots and pre-exisiting chatbot frameworks were fine at simple action => response behavior, but weren't great at using contextual clues to prove a more fluid experience.
+Botler was developed to let [fynd](https://fynd.me) build [fyndbot](https://m.me/shopfynd).
+We wanted a contextual-aware chatbot to be everyone's favorite personal shopper. We found that many chatbots and pre-exisiting chatbot frameworks were fine at simple action => response behavior, but weren't great at using contextual clues to prove a more fluid experience.
 
-A second goal of Botler was to provide as much general out-of-the-box language functionality as possible. We shouldn't keep reiventing the NLP wheel.
+Another goal of Botler was to provide as much general out-of-the-box language functionality as possible. We shouldn't keep reiventing the NLP wheel and the more pre-defined behavior everyone adds, the smarter all the bots get.
 
 ## Components
 Botler uses three components to build a bot, **intents**, **actions** and the **reducer**.
@@ -23,108 +24,153 @@ Botler comes with a few key intents already installed. Some are
 ```bash
 $ npm install --save botler
 ```
-## User object
 
 ## Intents
-An intent is something the user wants done.
+An intent is something the user wants done. There are two main elements to an intent, the *topic* and the *action*.  
 
-A function that takes the currently input text and the user object and returns an intent through a promise. The intent was chosen to be promise based in case it needs to make a call to another process or web api. For example, fyndbot queries the fynd suggestion api to detect if any fashion dna was entered by the user.
+The topic is the overall theme of the conversaton and makes it easier to understand the users meaning when there could be ambiguity. For example, is 'Boston' the city or band? If the topic for the last few of the user's intents have been weather, the city is more likely the correct interpretation
+
+The action is what the user would like done, examples could be "play music", "get weather forcast".
 
 ## Reducer
-Pick the right intent to pass on.
-
-The reducer takes all array of results and returns a single intent. The default reducer takes the first intent that returns a valid action and then merges all the intents' details, this allowes intents to become small modules. For example, out of the box, a 'topic intent' is always run that tries to extract people and places from the text stream.
-
+From an array of possible intents pick the 1 correct intent to act upon.
 
 ## Skills
-A skill is something the bot knows how to do.
+A skill is something the bot knows how to do, for example querying an API endpoint.
 
-A function that takes a user object and returns a promise. Skills most likely will read in the intent and state of the user and decide to run an action, an api call for example.
+## State of the coversation
 
 
-## Adding new phrases
-Just make a directory of Javascript files that each are named for the intent and export an array of strings representing that phrase and run the baysian classifier engine locally.
-```javascript
-/// nlp/phrases/weather.js
-module.exports = [ 'what\'s the weather in', 'weather', 'tell me the forecast'];
-```
-```bash
-$ generate-classifiers ./nlp/phrases/ ./node_modules/botler/nlp/phrases
-```
+## Examples
+[Weather bot examples](./examples/rainbot) (most simple example)  
+[Buzzfeed based news bot w/FB integration](./examples/buzzer) (more complex)  
 
-## Weather Bot Example
+## A weather chatbot in less than 100 lines!
 A weather chatbot in less than 100 lines!
 
-### Import
+### First let's teach botler what weather is
+Just make a directory named the topic of the intent. Inside we will have a few JSON files that each are named for the intent action and are an array of strings representing the different forms of the phrasing of the action.
+
+This will add the intent topic 'weather' with the two intents 'weather' and 'rain'.
+#### weather.json
+```json
+[ "what's the weather in", "weather", "tell me the forecast"]
+```
+#### rain.json
+```json
+[ "is it raining", "will it rain"]
+```
+#### Directory structure
+```
+|-- build
+|-- lib
+|-- nlp
+  |-- weather
+    |-- weather.json
+    |-- rain.json
+|-- src
+```
+
+Let's teach botler about some cities too
+#### new_york.json
+```json
+[ "new york", "nyc", "JFK"]
+```
+#### london.json
+```json
+[ "london", "lhr"]
+```
+#### Directory structure
+```
+|-- build
+|-- lib
+|-- nlp
+  |-- weather
+    |-- weather.json
+    |-- rain.json
+  |-- location
+    |-- new_york.json
+    |-- london.json
+|-- src
+```
+
+### Import Botler
 ```typescript
-const Botler = require('botler');
-import { User, Intent } from 'botler';
+import Botler, { User, Intent, defaultReducer } from 'botler';
+import * as util from 'util';
 ```
 
 ### Adding weather based phrase detection
-```bash
-$ generate-classifiers ./nlp/phrases ./node_modules/botler/nlp/phrases
-```
 ```typescript
-//teach bot about weather
-const bot = new Botler(['./nlp/classifiers.json']);
+//teach bot about weather using the previously created intent phrases
+const bot = new Botler([`${__dirname}/../nlp`]);
+//botler now knows about weather and some cities
+```
 
+### Add a skill to grab the weather
+```typescript
 function weatherSkill(user: User): Promise<User> {
-  if (user.state === 'city'
-  && user.intent.details.places && user.intent.details.places.length > 0) {
-    console.log(`the weather in ${user.intent.details.places[0].title} will be sunny`);
+  const weather = ['sunny', 'rainy', 'cloudy']; //there are only three posibilities
+
+  // if we've detected a city (new york or london) then let's get a forecast
+  if (user.intent.topic === 'location') {
+    //just make the city name pretty new_york => 'new york'
+    const city = user.intent.action.replace('_', ' '); 
+
     user.state = 'none';
-    return Promise.resolve(user);
+    return sendToUser(`the weather in ${city} will be ${weather[Math.floor(Math.random()*weather.length)]}`)
+      .then(() => user);
+    /// weatherAPI(city)
+    ///  .then(forecast => sendToUser(`forecase is ${forecast}`))
+    ///  .then(() => user);
   }
 
-  if (user.intent.action === 'weather') {
-    if (!user.intent.details.places || user.intent.details.places.length === 0) {
-      console.log('What city would you like the weather for?')
-      user.state = 'city';
-      return Promise.resolve(user);
-    } else {
-      // return weatherapi(...).then(()=>user);
-      console.log(`the weather in ${user.intent.details.places[0].title} will be sunny`);
-      user.state = 'none';
-      return Promise.resolve(user);
-    }
+  // botler has some helpers that are always running, such as looking for dates and numbers in the users text
+  // if the user has entered a number that is 5 digits, let's assume it's a zip code
+  if (user.intent.topic === 'details' && user.intent.details.value.toString().length === 5) {
+    const zip = user.intent.details.value;
+    user.state = 'none';
+    return sendToUser(`the weather at ${zip} will be ${weather[Math.floor(Math.random()*weather.length)]}`)
+      .then(() => user);
   }
-  return null;  //return null if skill can't process intent;
+
+  return null;  //return null if skill can't process this intent;
 }
 ```
 
-### Adding new actions for basic built-in bot functionarly
+### Adding new actions for basic chat functionarly
 ```typescript
-function confusedSkill(user: User): Promise<User> {
-  console.log(`I'm confused, user intent was ${user.intent.action}`);
-  return Promise.resolve(user);
-}
-
 function chatSkill(user: User): Promise<User> {
+  // decide how to respond based on the users intent
   switch(user.intent.action) {
-    case 'hello':
-      console.log('Hi there! Would you like to know the weather?');
+    case 'hello': // user said hello
       user.state = 'hello';
-      return Promise.resolve(user);
+      return sendToUser('Hi there! Would you like to know the weather?')
+        .then(() => user);
 
-    case 'help':
-      console.log('Hi there! just tell me what city you want to know the weather in...');
+    case 'help':  // user asked for help
       user.state = 'help';
-      return Promise.resolve(user);
+      return sendToUser('Hi there! just tell me what city you want to know the weather in...')
+        .then(() => user);
 
-    case 'yes':
+    case 'weather': // user asked about the weather but didn't provide a location
+      user.state = 'location';
+      return sendToUser('What city do you want to know the weather in?')
+        .then(() => user);
+
+    case 'yes': // user said yes, check the state of the coversation to figure out what they said yes to
       if (user.state === 'hello') { // user responded yes to 'would you like to know the weather?'
-        console.log('Great, what city?');
         user.state = 'city';
-        return Promise.resolve(user);
+        return sendToUser('Great, what city?')
+          .then(() => user);
       }
       return null; //return null if skill can't process intent;
 
     case 'no':
       if (user.state === 'hello') { // user responded no to 'would you like to know the weather?'
-        console.log('Why not?');
         user.state = 'none';
-        return Promise.resolve(user);
+        return sendToUser('Why not?')
+          .then(() => user);
       }
       return null; //return null if skill can't process intent;
 
@@ -133,37 +179,71 @@ function chatSkill(user: User): Promise<User> {
   }
 }
 
-//add skills to bot, skills are run all at once, but prioritized first to last
-bot.unshiftSkill(confusedSkill);
-bot.unshiftSkill(chatSkill);
-bot.unshiftSkill(weatherSkill);
+function confusedSkill(user: User): Promise<User> {
+  // catch all chat response if Botler couldn't detect a valid intent or the intent wasn't valid
+  // with the current user state
+  // console.log(`I'm confused, user intent was ${user.intent.action}`);
+  return sendToUser('I\'m confused')
+    .then(() => user);
+}
+```
+
+### Reducer that prioritizes location
+```typescript
+function weatherReducer(intents: Array<Intent>): Promise<Intent> {
+  if (this && this.debugOn) console.log('intents:', util.inspect(intents, { depth:null }));
+
+  //if we detect a location, prioritize that intent and return it
+  const location = intents.filter(intent => intent.topic === 'location');
+  if (location.length > 0) {
+    return Promise.resolve(location[0]);
+  }
+
+  //otherwise just do the normal thing
+  return defaultReducer(intents);
+}
+```
+
+### Mock functions as if sending/receiving text
+```typescript
+function sendToUser(text: string): Promise<void> {
+  console.log(`<- ${text}`);
+  return Promise.resolve();
+}
+
+function receiveFromUser(user: User, text: string): Promise<User> {
+  console.log(`-> ${text}`);
+  return bot.processText(user, text);
+}
 ```
 
 ### Run user input
 ```typescript
-const emptyUser: User = {
-  state: 'none',
-  intent: {
-    action: 'none',
-  },
-};
+// create an empty user and then add some custom info
+const emptyUser: User = bot.createEmptyUser({ apiUserID: 'custom_info' });
 
-console.log('- hi');
-bot.processText(emptyUser, 'hi')
+// this could be an sample conversation
+receiveFromUser(emptyUser, 'hi')
   .then((user: User) => {
-    console.log('- yes');
-    return bot.processText(user, 'yes');
+    return receiveFromUser(user, 'yes');
   })
   .then((user: User) => {
-    console.log('- london');
-    return bot.processText(user, 'london');
+    return receiveFromUser(user, 'london');
   })
   .then((user: User) => {
-    console.log('- help');
-    return bot.processText(user, 'help');
+    return receiveFromUser(user, 'help');
   })
   .then((user: User) => {
-    console.log('- what\'s the weather in London?');
-    return bot.processText(user, 'what\'s the weather in London?');
+    return receiveFromUser(user, 'what\'s the weather in London?');
+  })
+  .then((user: User) => {
+    //should cause confusion
+    return receiveFromUser(user, 'you\'re the best!');
+  })
+  .then((user: User) => {
+    return receiveFromUser(user, 'What\'s the weather in New York, NY tomorrow');
+  })
+  .then((user: User) => {
+    return receiveFromUser(user, 'How about at 10004');
   });
 ```

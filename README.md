@@ -7,9 +7,12 @@ Another goal of Botler was to provide as much general out-of-the-box language fu
 
 ## Components
 Botler uses three components to build a bot, **intents**, **actions** and the **reducer**.
-* **Intents** take a text input (and potential the conversation so far) and return the intent of the user, for example "tell me weather in London" maps to {action:'weather', details:{ location: 'London' } }
-* **Skills** take intents and the state of the conversation to run an action such as querying an API and sending the results to the user
-* The **Reducer** takes multiple intents and reduces it to the correct one
+* **[Intents](./doc/intents.md)** take a text input (and potential the conversation so far) and return the intent of the user, for example "tell me weather in London" maps to ```{action:'weather', topic: 'weather, details:{ location: 'London' } }```
+* The **[Reducer](./doc/reducer.md)** takes multiple detected intents and reduces it to the correct one
+* **[Skills](./doc/skills.ms)** take intents and the state of the conversation to run an action such as querying an API and sending the results to the user
+
+## The User
+The **User** is a simple object the holds the current state, detected intent, and conversation (if intents require rocessing of the entire conversation). It is easily entended by adding more keys to hold application specific info (such as a unique user id to respond to).
 
 ## Built-in functionality
 Botler comes with a few key intents already installed. Some are
@@ -24,26 +27,9 @@ Botler comes with a few key intents already installed. Some are
 $ npm install --save botler
 ```
 
-## [Intents](./doc/intents.md)
-An intent is something the user wants done. There are two main elements to an intent, the *topic* and the *action*.  
-
-The topic is the overall theme of the conversaton and makes it easier to understand the users meaning when there could be ambiguity. For example, is 'Boston' the city or band? If the topic for the last few of the user's intents have been weather, the city is more likely the correct interpretation
-
-The action is what the user would like done, examples could be "play music", "get weather forcast".
-
-## [Reducer](./doc/reducer.md)
-From an array of possible intents pick the 1 correct intent to act upon.
-
-## [Skills](./doc/skills.ms)
-A skill is something the bot knows how to do, for example querying an API endpoint.
-
-## User
-The **User** is a simple object the holds the current state, detected intent, and conversation (if intents require rocessing of the entire conversation). It is easily entended by adding more keys to hold application specific info (such as a unique user id).
-
-
 ## Examples
 [Weather bot examples](./examples/rainbot) (most simple example)  
-[Buzzfeed based news bot w/FB integration](./examples/buzzer) (more complex)  
+[Buzzfeed based news bot](./examples/buzzer) (more complex)  
 
 ## A weather chatbot in less than [100 lines](./examples/rainbot/build/index.js)!
 
@@ -203,7 +189,7 @@ function weatherReducer(intents: Array<Intent>): Promise<Intent> {
 }
 ```
 
-### Mock functions as if sending/receiving text
+### Mock functions for I/O
 ```typescript
 function sendToUser(text: string): Promise<void> {
   console.log(`<- ${text}`);

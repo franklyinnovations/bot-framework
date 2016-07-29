@@ -96,9 +96,9 @@ app.post(webhookPath, (req, res) => {
     console.log('event', util.inspect(event, { showHidden: true, depth: null, colors: true }));
 
     const sender = event.sender;
-    let promise = getUser(event.sender.id)
+    let promise = getUser(sender.id)
       .then((aUser) => {
-        fb.sendReadReceipt(sender.id);
+        fb.sendReadReceipt(aUser.id);
         return aUser;
       });
 

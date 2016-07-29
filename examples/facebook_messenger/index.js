@@ -1,17 +1,17 @@
-"use strict"
-const botler = require('botler').default;
-const sendApi = require('facebook-send-api').default;
+'use strict';
+const Botler = require('botler').default;
+const SendApi = require('facebook-send-api').default;
 const express = require('express');
 const bodyParser = require('body-parser');
 const _ = require('lodash');
 const util = require('util');
 
 const token = process.env.TOKEN || 'xxx';
-const verify_token = process.env.VERIFYTOKEN || 'yyy';
+const verifyToken = process.env.VERIFYTOKEN || 'yyy';
 const webhookPath = process.env.WEBHOOKPATH || '/webook';
 
-const bot = new botler();
-const fb = new sendApi(token);
+const bot = new Botler();
+const fb = new SendApi(token);
 const app = express();
 
 const userDB = {};
@@ -22,70 +22,68 @@ bot.unshiftSkill(SpeechSkill);
 
 function confusedSkill(user) {
   user.state = 'unknown';
-  return FBPlatform.sendTextMessage(user.id, 'you confuse me')
-    .then(() => sender);
+  return fb.sendTextMessage(user.id, 'you confuse me')
+    .then(() => user);
 }
 
 function SpeechSkill(user) {
-  const intent = sender.intent.action;
+  const intent = user.intent.action;
 
   switch (intent) {
     case 'hello':
       user.state = 'chat';
       return fb.sendTextMessage(user.id, 'hey')
-        .then(() => sendStyles(sender));
+        .then(() => user);
 
     case 'help':
       user.state = 'help';
       return fb.sendTextMessage(user.id, 'Even I don\'t know what I can do')
-        .then(() => sender);
+        .then(() => user);
 
     case 'yes':
-      switch(user.state) {
+      switch (user.state) {
         case 'reset':
           return fb.sendTextMessage(user.id, 'I have already forgotten you')
-            .then(() => sender);
+            .then(() => user);
         default:
           return null;
       }
 
     case 'no':
-      switch(user.state) {
+      switch (user.state) {
         case 'reset':
           return fb.sendTextMessage(user.id, 'nevermind then')
-            .then(() => sender);
+            .then(() => user);
         default:
           return null;
       }
 
     case 'reset':
-      sender.state = 'reset';
+      user.state = 'reset';
       return fb.sendTextMessage(user.id, 'Do you want to reset? (yes or no)')
-        .then(() => sender);
+        .then(() => user);
 
     default:
       return null;
   }
-
-  return null;
 }
 
 function getUser(userID) {
   if (userDB[userID]) {
-    return Promise.resolve(userDB[userID])
+    return Promise.resolve(userDB[userID]);
   }
-  return Promise.resolve(bot.createEmptyUser({ id: userID })); //we should save the user...
+  return Promise.resolve(bot.createEmptyUser({ id: userID }));
 }
 
 function saveUser(user) {
-  userDB[user.id] = userDB[userID];
+  userDB[user.id] = user;
   return Promise.resolve(user);
 }
 
 // Facebook webhook setup
 app.use(bodyParser.json());
 app.get(webhookPath, (req, res) => {
-  if (req.query['hub.verify_token'] === verify_token) {
+  if (req.query['hub.verify_token'] === verifyToken) {
     res.send(req.query['hub.challenge']);
   }
   res.send('Error, wrong validation token');
@@ -100,8 +98,8 @@ app.post(webhookPath, (req, res) => {
     const sender = event.sender;
     let promise = getUser(event.sender.id)
       .then((aUser) => {
-        FBPlatform.sendReadReceipt(sender.id);
-        return aUser
+        fb.sendReadReceipt(sender.id);
+        return aUser;
       });
 
     if (event.message && event.message.text) {

@@ -1,6 +1,6 @@
 {
   "name": "botler",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Bot framework for contextual chatbots",
   "main": "lib/index.js",
   "typings": "lib/index",

@@ -1,0 +1,9 @@
+{
+  "extends": "tslint:recommended",
+  "rules": {
+    "quotemark": "single",
+    "no-console": "off",
+    "interface-name": "off",
+    "max-line-length": 200
+  }
+}

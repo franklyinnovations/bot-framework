@@ -7,5 +7,8 @@
     "node": "registry:dt/node#6.0.0+20160608110640",
     "request": "registry:dt/request#0.0.0+20160524135346",
     "request-promise": "registry:dt/request-promise#0.4.2+20160316155526"
+  },
+  "dependencies": {
+    "lodash": "registry:npm/lodash#4.0.0+20160723033700"
   }
 }

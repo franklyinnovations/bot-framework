@@ -7,11 +7,11 @@ export interface TopicCollection {
     topic: string;
     actions: Array<ActionCollection>;
 }
-export interface actionClassifier {
+export interface ActionClassifier {
     [key: string]: natural.LogisticRegressionClassifier;
 }
 export interface Classifiers {
-    [key: string]: actionClassifier;
+    [key: string]: ActionClassifier;
 }
 export declare const classifier: typeof natural.LogisticRegressionClassifier;
 export declare function GenerateClassifier(topicsToLoad: Array<string | TopicCollection>): Classifiers;

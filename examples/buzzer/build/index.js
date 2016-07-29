@@ -6,7 +6,7 @@ const util = require('util');
 const nlpFiles = [`${__dirname}/../nlp`];
 const bot = new botler_1.default();
 // bot.turnOnDebug();
-//add skills to bot, skills are run all at once, but prioritized first to last
+// add skills to bot, skills are run all at once, but prioritized first to last
 bot.unshiftSkill(confusedSkill)
     .unshiftSkill(chatSkill)
     .setReducer(newReducer);
@@ -31,8 +31,10 @@ function confusedSkill(user) {
         .then(() => user);
 }
 function newReducer(intents) {
-    if (this && this.debugOn)
+    if (this && this.debugOn) {
         console.log('intents:', util.inspect(intents, { depth: null }));
+    }
+    ;
     return botler_1.defaultReducer(intents);
 }
 function chatSkill(user) {
@@ -46,7 +48,7 @@ function chatSkill(user) {
             return sendToUser('Help is on the way!')
                 .then(() => user);
         default:
-            return null; //return null if skill can't process intent;
+            return null; // return null if skill can't process intent;
     }
 }
 function sendToUser(text) {
@@ -66,9 +68,9 @@ function extractBuzz(url) {
         // console.log(util.inspect(json, {depth:1}));
         const stories = json.big_stories.map(story => {
             const theStory = {
-                title: '',
-                tags: [],
                 category: '',
+                tags: [],
+                title: '',
             };
             if (!story.title) {
                 return null;
@@ -84,27 +86,28 @@ function extractBuzz(url) {
         });
         const categories = _.compact(stories.map(story => story.category));
         const tags = _.flatten(stories.map(story => story.tags));
-        return {
+        const theNews = {
             tags: tags,
             categories: categories,
             stories: stories,
         };
+        return theNews;
     });
 }
 extractBuzz('https://www.buzzfeed.com/api/v2/feeds/news')
     .then(initialNews => {
-    //add skill that has current news curried into it
+    // add skill that has current news curried into it
     bot.unshiftSkill(newsSkill(initialNews));
-    //retrain classifiers with categories from news page
+    // retrain classifiers with categories from news page
     const categoryCollection = {
-        topic: 'categories',
         actions: initialNews.categories.map(category => ({
             action: category.toLowerCase(),
             phrases: [category] })),
+        topic: 'categories',
     };
     console.log(`retraining for ${initialNews.categories.length} categories...`);
     bot.retrainClassifiers(nlpFiles.concat(categoryCollection));
-    //ask fot top stories
+    // ask fot top stories
     return receiveFromUser(emptyUser, 'top stories');
 })
-    .then(() => receiveFromUser(emptyUser, 'tell me about politics')); //ask about a category that was pulled in dynamically
+    .then(() => receiveFromUser(emptyUser, 'tell me about politics')); // ask about a category that was pulled in dynamically

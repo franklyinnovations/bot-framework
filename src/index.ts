@@ -1,25 +1,23 @@
-const _ = require('lodash');
-const fs = require('fs');
-const Promise = require('bluebird');
-const util = require('util');
+import * as _ from 'lodash';
+import * as Promise from 'bluebird';
+import * as util from 'util';
 
-const natural = require('natural');
-const tokenizer = new natural.WordTokenizer();
-import { classifier, GenerateClassifier, TopicCollection } from './classifier';
+import * as natural from 'natural';
+import { classifier, GenerateClassifier, TopicCollection, Classifiers } from './classifier';
 import { grabTopics } from './helpers';
 
 export { TopicCollection } from './classifier';
 
 export interface Intent {
-  action: string,
-  topic: string,
-  details?: any,
+  action: string;
+  topic: string;
+  details?: any;
 }
 
 export interface User {
-  conversation?: Array<string>,
-  state: any,
-  intent: Intent,
+  conversation?: Array<string>;
+  state: any;
+  intent: Intent;
 }
 
 export interface IntentFunction {
@@ -30,16 +28,16 @@ export interface SkillFunction {
   (user: User): Promise<User>;
 }
 
-export interface Reducer {
-  (intents: Array<Intent>, user: User): Promise<Intent>;
+export interface ReducerFunction {
+  (intents: Array<Intent>, user?: User): Promise<Intent>;
 }
 
 export default class ChatBot {
+  public classifiers: Classifiers;
   private intents: Array<IntentFunction>;
   private skills: Array<SkillFunction>;
-  private reducer: Reducer;
+  private reducer: ReducerFunction;
   private debugOn: Boolean;
-  public classifiers: any;
 
   constructor(classifierFiles: Array<string|TopicCollection> = []) {
     const allClassifiers = GenerateClassifier(classifierFiles.concat(`${__dirname}/../nlp/phrases`));
@@ -62,7 +60,7 @@ export default class ChatBot {
     return this;
   }
 
-  public setReducer(newReducer: Reducer) {
+  public setReducer(newReducer: ReducerFunction) {
     this.reducer = newReducer.bind(this);
     return this;
   }
@@ -80,20 +78,21 @@ export default class ChatBot {
   public createEmptyIntent(): Intent {
     return {
       action: null,
-      topic: null,
       details: {},
+      topic: null,
     };
   }
 
   public createEmptyUser(defaults: any = {}): User {
-    return _.defaults({
+    const anEmptyUser: User = {
       conversation: [],
-      state: 'none',
       intent: this.createEmptyIntent(),
-    }, defaults);
+      state: 'none',
+    };
+    return _.defaults(anEmptyUser, defaults) as User;
   }
 
-  public processText<U extends User>(user:U, text:string): Promise<U> {
+  public processText<U extends User>(user: U, text: string): Promise<U> {
     if (typeof user.conversation === 'undefined') {
       user.conversation = [];
     }
@@ -101,10 +100,10 @@ export default class ChatBot {
     return Promise.map(this.intents, intent => intent(text, user))
       .then(_.flatten)
       .then(_.compact)
-      .then(this.reducer)
+      .then((intents: Array<Intent>) => this.reducer(intents, user))
       .then(intent => {
         user.intent = intent;
-        for(let i=0; i < this.skills.length; i++) {
+        for (let i = 0; i < this.skills.length; i++) {
           const result = this.skills[i](user);
           if (result !== null) {
             return result;
@@ -117,9 +116,9 @@ export default class ChatBot {
 }
 
 interface Classification {
-  label: string,
-  topic: string,
-  value: number,
+  label: string;
+  topic: string;
+  value: number;
 }
 
 function checkUsingClassifier(text: string, classifier: any, label: string, topic: string): Classification {
@@ -135,14 +134,14 @@ function checkUsingClassifier(text: string, classifier: any, label: string, topi
 }
 
 export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
-  const filtered: Array<Array<Classification>> = _.map(this.classifiers, (classifiers, topic) => {
+  const filtered: Array<Array<Classification>> = _.map(this.classifiers, (classifiers: Classifiers, topic: string) => {
     const trueClassifications = _.map(classifiers, (classifier, label) => checkUsingClassifier(text, classifier, label, topic));
     // console.log(topic, trueClassifications);
     return _.compact(trueClassifications);
   });
 
   let compacted: Array<Classification> = _.compact(_.flatten(filtered));
-  if (this && this.debugOn) console.log('compacted', util.inspect(compacted, { depth:null }));
+  if (this && this.debugOn) { console.log('compacted', util.inspect(compacted, { depth: null })); };
 
   if (classifier === natural.LogisticRegressionClassifier) {
     compacted = compacted.filter(result => result.value > 0.6);
@@ -152,14 +151,14 @@ export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
     return null;
   }
   const sorted: Array<Classification> = _.orderBy(compacted, ['value'], 'desc');
-  if (this && this.debugOn) console.log(`${text}\n${util.inspect(sorted, { depth:null })}`);
+  if (this && this.debugOn) { console.log(`${text}\n${util.inspect(sorted, { depth:null })}`); };
 
   const intents: Array<Intent> = sorted.map(intent => ({
     action: intent.label,
-    topic: intent.topic,
     details: {
       confidence: intent.value,
     },
+    topic: intent.topic,
   }));
 
   return Promise.resolve(intents);
@@ -168,7 +167,7 @@ export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
 export function defaultReducer(intents: Array<Intent>): Promise<Intent> {
   return Promise.resolve(_.compact(intents))
     .then((validIntents: Array<Intent>) => {
-      if (this.debugOn) console.log('validIntents', util.inspect(validIntents, { depth: null }));
+      if (this.debugOn) { console.log('validIntents', util.inspect(validIntents, { depth: null })); };
       if (validIntents.length === 0) {
         const unknownIntent: Intent = { action: 'none', topic: null };
         return unknownIntent;
@@ -176,7 +175,7 @@ export function defaultReducer(intents: Array<Intent>): Promise<Intent> {
       const mergedDetails = _.defaults.apply(this, validIntents.map(intent => intent.details));
       const firstIntent = validIntents[0];
       firstIntent.details = mergedDetails;
-      if (this.debugOn) console.log(firstIntent);
+      if (this.debugOn) { console.log(firstIntent); };
       return firstIntent;
-    })
+    });
 }

@@ -1,33 +1,32 @@
 import * as natural from 'natural';
 import * as _ from 'lodash';
-import * as util from 'util';
-const fs = require('fs');
+import * as util from 'util'; // tslint:disable-line
+import * as fs from 'fs';
 
 export interface ActionCollection {
-  action: string,
-  phrases: Array<string>,
+  action: string;
+  phrases: Array<string>;
 }
 
 export interface TopicCollection {
-  topic: string,
-  actions: Array<ActionCollection>,
+  topic: string;
+  actions: Array<ActionCollection>;
 }
 
-export interface actionClassifier {
-  [key:string]: natural.LogisticRegressionClassifier
+export interface ActionClassifier {
+  [key: string]: natural.LogisticRegressionClassifier;
 }
 
 export interface Classifiers {
-  [key:string]: actionClassifier,
+  [key: string]: ActionClassifier;
 }
 
 export const classifier = natural.LogisticRegressionClassifier;
 // export const classifier = natural.BayesClassifier;
 
 export function GenerateClassifier(topicsToLoad: Array<string | TopicCollection>): Classifiers {
-  const topics:Array<TopicCollection> = topicsToLoad.filter(element => typeof element !== 'string') as Array<TopicCollection>;
-  topicsToLoad.filter(directory => typeof directory === 'string').forEach(directory => fs.readdirSync(directory).forEach(topic => {
-    const key = topic;
+  const topics: Array<TopicCollection> = topicsToLoad.filter(element => typeof element !== 'string') as Array<TopicCollection>;
+  topicsToLoad.filter(directory => typeof directory === 'string').forEach((directory: string) => fs.readdirSync(directory).forEach(topic => {
     topics.push(readInTopic(topic, `${directory}/${topic}`));
   }));
   // console.log('t:', util.inspect(topics, {depth:null}));
@@ -52,7 +51,7 @@ function readInTopic(topic: string, directory: string): TopicCollection {
     try {
       const phrases = require(`${directory}/${file}`);
       actions.push({action: key[1], phrases});
-    } catch(err) {
+    } catch (err) {
       throw new Error(`Invalid JSON file ${directory}/${file}`);
     }
   });
@@ -62,11 +61,10 @@ function readInTopic(topic: string, directory: string): TopicCollection {
   };
 }
 
-
 export function GenerateTopicClassifier(topic: TopicCollection, allPhrases: Array<string>) {
-  const classifiers: { [key:string]: natural.LogisticRegressionClassifier } = {};
+  const classifiers: { [key: string]: natural.LogisticRegressionClassifier } = {};
   topic.actions.forEach((action: ActionCollection) => { // eslint-disable-line no-unused-vars
-    const phrases = action.phrases
+    const phrases = action.phrases;
     const key = action.action;
 
     const thisClassifier = new classifier();
@@ -77,27 +75,27 @@ export function GenerateTopicClassifier(topic: TopicCollection, allPhrases: Arra
     thisClassifier.train();
 
     // console.log(`--${key}--`);
-
-    const othersChecked = otherPhrases.map(phrase => thisClassifier.classify(phrase)).map((classified, index) => {
-      if (classified === 'true') {
-        // console.log('other', index, otherPhrases[index], thisClassifier.getClassifications(otherPhrases[index]));
-        return otherPhrases[index];
-      }
-      return null;
-    });
-
-    const selfChecked = phrases.map(phrase => thisClassifier.classify(phrase)).map((classified, index) => {
-      if (classified === 'false') {
-        // console.log('self', index, value[index], thisClassifier.getClassifications(value[index]));
-        return phrases[index];
-      }
-      // console.log(value[index], thisClassifier.getClassifications(value[index]));
-      return null;
-    });
-
+    //
+    // const othersChecked = otherPhrases.map(phrase => thisClassifier.classify(phrase)).map((classified, index) => {
+    //   if (classified === 'true') {
+    //     // console.log('other', index, otherPhrases[index], thisClassifier.getClassifications(otherPhrases[index]));
+    //     return otherPhrases[index];
+    //   }
+    //   return null;
+    // });
+    //
+    // const selfChecked = phrases.map(phrase => thisClassifier.classify(phrase)).map((classified, index) => {
+    //   if (classified === 'false') {
+    //     // console.log('self', index, value[index], thisClassifier.getClassifications(value[index]));
+    //     return phrases[index];
+    //   }
+    //   // console.log(value[index], thisClassifier.getClassifications(value[index]));
+    //   return null;
+    // });
     // console.log('other:', otherPhrases.length, '  self:', value.length);
     // console.log('passed for other', _.compact(othersChecked));
     // console.log('failed for home', _.compact(selfChecked));
+
     classifiers[key] = thisClassifier;
   });
 

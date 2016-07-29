@@ -7,7 +7,7 @@ const nlpFiles: Array<string|TopicCollection> = [`${__dirname}/../nlp`];
 const bot = new Botler();
 // bot.turnOnDebug();
 
-//add skills to bot, skills are run all at once, but prioritized first to last
+// add skills to bot, skills are run all at once, but prioritized first to last
 bot.unshiftSkill(confusedSkill)
   .unshiftSkill(chatSkill)
   .setReducer(newReducer);
@@ -16,17 +16,17 @@ function newsSkill(newsInfo: ExtractedNews) {
   return function (user: User): Promise<User> {
     if (user.intent.action === 'news') {
       return sendToUser(`top stories now:`)
-        .then(() => Promise.all(newsInfo.stories.slice(0,3).map(story => sendToUser(story.title))))
-        .then(()=>user);
+        .then(() => Promise.all(newsInfo.stories.slice(0, 3).map(story => sendToUser(story.title))))
+        .then(() => user);
     }
 
     if (user.intent.topic === 'categories') {
       return sendToUser(`stories about ${user.intent.action}:`)
         .then(() => Promise.all(newsInfo.stories.filter(story => story.category.toLowerCase() === user.intent.action).map(story => sendToUser(story.title))))
-        .then(()=>user);
+        .then(() => user);
     }
     return null;
-  }
+  };
 }
 
 function confusedSkill(user: User): Promise<User> {
@@ -36,13 +36,13 @@ function confusedSkill(user: User): Promise<User> {
 }
 
 function newReducer(intents: Array<Intent>): Promise<Intent> {
-  if (this && this.debugOn) console.log('intents:', util.inspect(intents, { depth:null }));
+  if (this && this.debugOn) { console.log('intents:', util.inspect(intents, { depth: null })); };
 
   return defaultReducer(intents);
 }
 
 function chatSkill(user: User): Promise<User> {
-  switch(user.intent.action) {
+  switch (user.intent.action) {
     case 'hello':
       user.state = 'hello';
       return sendToUser('Hi there! ')
@@ -54,7 +54,7 @@ function chatSkill(user: User): Promise<User> {
         .then(() => user);
 
     default:
-      return null; //return null if skill can't process intent;
+      return null; // return null if skill can't process intent;
   }
 }
 
@@ -72,13 +72,13 @@ function receiveFromUser(user: User, text: string): Promise<User> {
 const emptyUser: User = bot.createEmptyUser({ apiUserID: 'custom_info' });
 
 interface ExtractedNews {
-  tags: Array<string>,
-  categories: Array<string>,
+  categories: Array<string>;
+  tags: Array<string>;
   stories: Array<{
-    title: string,
-    tags: Array<string>,
-    category: string,
-  }>,
+    title: string;
+    tags: Array<string>;
+    category: string;
+  }>;
 }
 
 function extractBuzz(url: string): Promise<ExtractedNews> {
@@ -88,9 +88,9 @@ function extractBuzz(url: string): Promise<ExtractedNews> {
       // console.log(util.inspect(json, {depth:1}));
       const stories = json.big_stories.map(story => {
         const theStory = {
-          title: '',
-          tags: [],
           category: '',
+          tags: [],
+          title: '',
         };
         if (!story.title) {
           return null;
@@ -108,34 +108,35 @@ function extractBuzz(url: string): Promise<ExtractedNews> {
         return theStory;
       });
 
-      const categories = _.compact(stories.map(story => story.category));
-      const tags = _.flatten(stories.map(story => story.tags));
+      const categories: Array<string> = _.compact(stories.map(story => story.category)) as Array<string>;
+      const tags: Array<string> = _.flatten(stories.map(story => story.tags)) as Array<string>;
 
-      return {
+      const theNews: ExtractedNews = {
         tags,
         categories,
         stories,
       };
-    })
+      return theNews;
+    });
 }
 
 extractBuzz('https://www.buzzfeed.com/api/v2/feeds/news')
   .then(initialNews => {
-    //add skill that has current news curried into it
+    // add skill that has current news curried into it
     bot.unshiftSkill(newsSkill(initialNews));
 
-    //retrain classifiers with categories from news page
+    // retrain classifiers with categories from news page
     const categoryCollection: TopicCollection = {
-      topic: 'categories',
       actions: initialNews.categories.map(category => ({
         action: category.toLowerCase(),
         phrases: [category]})
       ),
+      topic: 'categories',
     };
     console.log(`retraining for ${initialNews.categories.length} categories...`);
     bot.retrainClassifiers(nlpFiles.concat(categoryCollection));
 
-    //ask fot top stories
+    // ask fot top stories
     return receiveFromUser(emptyUser, 'top stories');
   })
-  .then(() => receiveFromUser(emptyUser, 'tell me about politics')) //ask about a category that was pulled in dynamically
+  .then(() => receiveFromUser(emptyUser, 'tell me about politics')); // ask about a category that was pulled in dynamically

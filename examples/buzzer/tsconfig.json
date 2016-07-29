@@ -12,6 +12,7 @@
     ],
     "files": [
       "typings/index.d.ts",
+      "custom_typings/natural/index.d.ts",
       "index.ts"
     ]
 }

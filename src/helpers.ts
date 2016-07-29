@@ -1,9 +1,9 @@
-let nlp = require('nlp_compromise');
+import * as nlp from 'nlp_compromise';
 import { Intent } from './index';
 
 export interface Topics {
-  people: Array<any>,
-  places: Array<any>,
+  people: Array<any>;
+  places: Array<any>;
 }
 
 export function grabTopics(text: string): Promise<Intent> {
@@ -11,11 +11,11 @@ export function grabTopics(text: string): Promise<Intent> {
   // console.log('nlpProcessed', nlpProcessed);
   return Promise.resolve({
     action: null,
-    topic: 'details',
     details: {
-      people: nlpProcessed.people(),
       dates: nlpProcessed.dates(),
+      people: nlpProcessed.people(),
       value: nlp.value(text).number,
-    }
+    },
+    topic: 'details',
   });
 }

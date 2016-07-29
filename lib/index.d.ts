@@ -1,4 +1,5 @@
-import { TopicCollection } from './classifier';
+import * as Promise from 'bluebird';
+import { TopicCollection, Classifiers } from './classifier';
 export { TopicCollection } from './classifier';
 export interface Intent {
     action: string;
@@ -16,19 +17,19 @@ export interface IntentFunction {
 export interface SkillFunction {
     (user: User): Promise<User>;
 }
-export interface Reducer {
-    (intents: Array<Intent>, user: User): Promise<Intent>;
+export interface ReducerFunction {
+    (intents: Array<Intent>, user?: User): Promise<Intent>;
 }
 export default class ChatBot {
+    classifiers: Classifiers;
     private intents;
     private skills;
     private reducer;
     private debugOn;
-    classifiers: any;
     constructor(classifierFiles?: Array<string | TopicCollection>);
     unshiftIntent(newIntent: IntentFunction): this;
     unshiftSkill(newSkill: SkillFunction): this;
-    setReducer(newReducer: Reducer): this;
+    setReducer(newReducer: ReducerFunction): this;
     turnOnDebug(): this;
     retrainClassifiers(classifierFiles?: Array<string | TopicCollection>): void;
     createEmptyIntent(): Intent;

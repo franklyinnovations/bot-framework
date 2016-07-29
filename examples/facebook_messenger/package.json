@@ -1,0 +1,27 @@
+{
+  "name": "fb-example",
+  "version": "1.0.0",
+  "description": "bot through facebook",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "bot"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fyndme/bot-framework.git"
+  },
+  "author": "Adam Juhasz",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "botler": "file:../../",
+    "express": "^4.14.0",
+    "facebook-send-api": "^2.3.0",
+    "lodash": "^4.14.0"
+  },
+  "private": true,
+  "preferGlobal": false
+}

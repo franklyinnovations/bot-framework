@@ -29,8 +29,9 @@ $ npm install --save botler
 While private: http://stackoverflow.com/questions/28728665/how-to-use-private-github-repo-as-npm-dependency
 
 ## Examples
-[Weather bot examples](./examples/rainbot) (most simple example)  
-[Buzzfeed based news bot](./examples/buzzer) (more complex)  
+* [Weather bot examples](./examples/rainbot) (most simple example)  
+* [Buzzfeed based news bot](./examples/buzzer) (more complex)  
+* [Facebook chatbot](./examples/facebook_messenger)  
 
 ## A weather chatbot in less than [100 lines](./examples/rainbot/build/index.js)!
 
@@ -101,7 +102,7 @@ function weatherSkill(user: User): Promise<User> {
   // if we've detected a city (new york or london) then let's get a forecast
   if (user.intent.topic === 'location') {
     //just make the city name pretty new_york => 'new york'
-    const city = user.intent.action.replace('_', ' '); 
+    const city = user.intent.action.replace('_', ' ');
 
     user.state = 'none';
     return sendToUser(`the weather in ${city} will be ${weather[Math.floor(Math.random()*weather.length)]}`)

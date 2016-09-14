@@ -127,7 +127,7 @@ function checkUsingClassifier(text: string, classifier: any, label: string, topi
     return null;
   }
   return {
-    label,
+    label: label.replace('-', ' '),
     topic,
     value: result.value,
   };
@@ -153,13 +153,26 @@ export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
   const sorted: Array<Classification> = _.orderBy(compacted, ['value'], 'desc');
   if (this && this.debugOn) { console.log(`${text}\n${util.inspect(sorted, { depth:null })}`); };
 
-  const intents: Array<Intent> = sorted.map(intent => ({
-    action: intent.label,
-    details: {
-      confidence: intent.value,
-    },
-    topic: intent.topic,
-  }));
+  const locations: Array<string> = _.compact(sorted.map((intent) => intent.topic === 'locations' ? _.startCase(intent.label) : null));
+
+  const intents: Array<Intent> = sorted.map(intent => {
+    const baseIntent: Intent = {
+      action: intent.label,
+      details: {
+        confidence: intent.value,
+        locations,
+      },
+      topic: intent.topic,
+    };
+
+    switch(intent.topic) {
+      case 'locations':
+        baseIntent.details.locations = locations;
+        break;
+    }
+
+    return baseIntent;
+  });
 
   return Promise.resolve(intents);
 }

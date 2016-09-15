@@ -32,6 +32,8 @@ export interface ReducerFunction {
   (intents: Array<Intent>, user?: User): Promise<Intent>;
 }
 
+const defaultClassifierDirectories: Array<string> = [`${__dirname}/../nlp/phrases`];
+
 export default class ChatBot {
   public classifiers: Classifiers;
   private intents: Array<IntentFunction>;
@@ -40,7 +42,7 @@ export default class ChatBot {
   private debugOn: Boolean;
 
   constructor(classifierFiles: Array<string|TopicCollection> = []) {
-    const allClassifiers = GenerateClassifier(classifierFiles.concat(`${__dirname}/../nlp/phrases`));
+    const allClassifiers = GenerateClassifier(classifierFiles.concat(defaultClassifierDirectories));
     this.classifiers = allClassifiers;
     // console.log(_.keys(this.classifiers));
     this.intents = [ baseBotTextNLP.bind(this), grabTopics.bind(this) ];
@@ -71,7 +73,7 @@ export default class ChatBot {
   }
 
   public retrainClassifiers(classifierFiles: Array<string|TopicCollection> = []) {
-    const allClassifiers = GenerateClassifier(classifierFiles.concat([`${__dirname}/../nlp/phrases`]));
+    const allClassifiers = GenerateClassifier(classifierFiles.concat(defaultClassifierDirectories));
     this.classifiers = allClassifiers;
   }
 

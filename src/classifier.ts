@@ -26,7 +26,7 @@ export const classifier = natural.LogisticRegressionClassifier;
 
 export function GenerateClassifier(topicsToLoad: Array<string | TopicCollection>): Classifiers {
   const topics: Array<TopicCollection> = topicsToLoad.filter(element => typeof element !== 'string') as Array<TopicCollection>;
-  topicsToLoad.filter(directory => typeof directory === 'string').forEach((directory: string) => fs.readdirSync(directory).forEach(topic => {
+  topicsToLoad.filter(directory => typeof directory === 'string').filter((directory: string) => !_.startsWith(directory, '.')).forEach((directory: string) => fs.readdirSync(directory).filter((directory: string) => !_.startsWith(directory, '.')).forEach(topic => {
     topics.push(readInTopic(topic, `${directory}/${topic}`));
   }));
   // console.log('t:', util.inspect(topics, {depth:null}));
@@ -45,7 +45,7 @@ export function GenerateClassifier(topicsToLoad: Array<string | TopicCollection>
 function readInTopic(topic: string, directory: string): TopicCollection {
   // console.log('dir', directory);
   const actions = [];
-  fs.readdirSync(directory).forEach(file => {
+  fs.readdirSync(directory).filter(file => !_.startsWith(file, '.')).forEach(file => {
     const key = /(.*).json/.exec(file);
     // console.log(`loading '${key[1]}'`);
     try {
@@ -72,6 +72,7 @@ export function GenerateTopicClassifier(topic: TopicCollection, allPhrases: Arra
     // console.log(value);
     phrases.forEach(phrase => thisClassifier.addDocument(phrase, 'true'));
     otherPhrases.forEach(phrase => thisClassifier.addDocument(phrase, 'false'));
+    console.log(`training ${key}`);
     thisClassifier.train();
 
     // console.log(`--${key}--`);

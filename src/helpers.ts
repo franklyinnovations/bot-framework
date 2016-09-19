@@ -17,7 +17,7 @@ export function grabTopics(text: string): Promise<Intent> {
   const nlpProcessed = nlp.text(text);
   // console.log('nlpProcessed', nlpProcessed);
 
-  const compacted = runThroughClassifiers(text, locationClassifiers, true);
+  const compacted = runThroughClassifiers(text, locationClassifiers);
   const grouped = _.groupBy(compacted, 'topic');
   const intent:Intent = {
     action: null,

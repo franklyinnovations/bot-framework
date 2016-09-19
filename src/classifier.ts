@@ -112,7 +112,7 @@ export function GenerateTopicClassifier(topic: TopicCollection, allPhrases: Arra
     // console.log(value);
     phrases.forEach(phrase => thisClassifier.addDocument(phrase, 'true'));
     otherPhrases.forEach(phrase => thisClassifier.addDocument(phrase, 'false'));
-    console.log(`training ${key}`);
+    // console.log(`training ${key}`);
     thisClassifier.train();
 
     // console.log(`--${key}--`);

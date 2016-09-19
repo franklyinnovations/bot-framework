@@ -3,7 +3,7 @@ import * as Promise from 'bluebird';
 import * as util from 'util';
 
 import * as natural from 'natural';
-import { classifier, GenerateClassifier, TopicCollection, Classifiers } from './classifier';
+import { classifier, GenerateClassifier, TopicCollection, Classifiers, Classification, checkUsingClassifier, runThroughClassifiers } from './classifier';
 import { grabTopics } from './helpers';
 
 export { TopicCollection } from './classifier';
@@ -117,37 +117,8 @@ export default class ChatBot {
   }
 }
 
-interface Classification {
-  label: string;
-  topic: string;
-  value: number;
-}
-
-function checkUsingClassifier(text: string, classifier: any, label: string, topic: string): Classification {
-  const result = classifier.getClassifications(text)[0];
-  if (result.label === 'false') {
-    return null;
-  }
-  return {
-    label: label.replace('-', ' '),
-    topic,
-    value: result.value,
-  };
-}
-
 export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
-  const filtered: Array<Array<Classification>> = _.map(this.classifiers, (classifiers: Classifiers, topic: string) => {
-    const trueClassifications = _.map(classifiers, (classifier, label) => checkUsingClassifier(text, classifier, label, topic));
-    // console.log(topic, trueClassifications);
-    return _.compact(trueClassifications);
-  });
-
-  let compacted: Array<Classification> = _.compact(_.flatten(filtered));
-  if (this && this.debugOn) { console.log('compacted', util.inspect(compacted, { depth: null })); };
-
-  if (classifier === natural.LogisticRegressionClassifier) {
-    compacted = compacted.filter(result => result.value > 0.6);
-  }
+  const compacted = runThroughClassifiers(text, this.classifiers);
 
   if (compacted.length === 0) {
     return null;
@@ -155,23 +126,14 @@ export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
   const sorted: Array<Classification> = _.orderBy(compacted, ['value'], 'desc');
   if (this && this.debugOn) { console.log(`${text}\n${util.inspect(sorted, { depth:null })}`); };
 
-  const locations: Array<string> = _.compact(sorted.map((intent) => intent.topic === 'locations' ? _.startCase(intent.label) : null));
-
   const intents: Array<Intent> = sorted.map(intent => {
     const baseIntent: Intent = {
       action: intent.label,
       details: {
         confidence: intent.value,
-        locations,
       },
       topic: intent.topic,
     };
-
-    switch(intent.topic) {
-      case 'locations':
-        baseIntent.details.locations = locations;
-        break;
-    }
 
     return baseIntent;
   });
@@ -190,6 +152,12 @@ export function defaultReducer(intents: Array<Intent>): Promise<Intent> {
       const mergedDetails = _.defaults.apply(this, validIntents.map(intent => intent.details));
       const firstIntent = validIntents[0];
       firstIntent.details = mergedDetails;
+      if (firstIntent.topic === 'details') {
+        if (_.keys(firstIntent.details.locations).length > 0) {
+          firstIntent.topic = 'locations';
+          firstIntent.action = _.keys(firstIntent.details.locations)[0];
+        }
+      }
       if (this.debugOn) { console.log(firstIntent); };
       return firstIntent;
     });

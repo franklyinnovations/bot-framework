@@ -11,6 +11,7 @@ export interface ActionCollection {
 export interface TopicCollection {
   topic: string;
   actions: Array<ActionCollection>;
+  location: string;
 }
 
 export interface ActionClassifier {
@@ -21,22 +22,58 @@ export interface Classifiers {
   [key: string]: ActionClassifier;
 }
 
+export interface Classification {
+  label: string;
+  topic: string;
+  value: number;
+}
+
+function onlyDirectories(name: string): boolean {
+  return !(_.startsWith(name, '.') || _.endsWith(name, '.json'));
+}
+
 export const classifier = natural.LogisticRegressionClassifier;
 // export const classifier = natural.BayesClassifier;
 
 export function GenerateClassifier(topicsToLoad: Array<string | TopicCollection>): Classifiers {
   const topics: Array<TopicCollection> = topicsToLoad.filter(element => typeof element !== 'string') as Array<TopicCollection>;
-  topicsToLoad.filter(directory => typeof directory === 'string').filter((directory: string) => !_.startsWith(directory, '.')).forEach((directory: string) => fs.readdirSync(directory).filter((directory: string) => !_.startsWith(directory, '.')).forEach(topic => {
-    topics.push(readInTopic(topic, `${directory}/${topic}`));
-  }));
+  const classifiers: Classifiers = {};
+
+  topicsToLoad.filter(directory => typeof directory === 'string')
+    .filter((directory: string) => onlyDirectories(directory))
+    .forEach((directory: string) => 
+      fs.readdirSync(directory)
+        .filter((directory: string) => onlyDirectories(directory))
+        .forEach(topic => {
+          topics.push(readInTopic(topic, `${directory}/${topic}`));
+        })
+    );
   // console.log('t:', util.inspect(topics, {depth:null}));
   const topicPhrases = topics.map((topic: TopicCollection) => _.flatten(topic.actions.map(action => action.phrases)));
   const allPhrases: string[] = _.chain(topicPhrases).flatten().flatten().value() as Array<string>;
   // console.log('ap:', util.inspect(allPhrases, {depth:null}));
 
-  const classifiers: Classifiers = {};
   topics.forEach(topic => {
-    classifiers[topic.topic] = GenerateTopicClassifier(topic, allPhrases);
+    const jsonFile = `${topic.location}/../${topic.topic}.json`;
+    try {
+      const stringed = fs.readFileSync(jsonFile, 'utf8');
+      const parsed = JSON.parse(stringed);
+      if (!(_.isEqual(topic.actions.map(action => action.action), _.keys(parsed.classifiers)) &&
+          _.isEqual(allPhrases, parsed.allPhrases))) {
+        console.log(`need to retrain ${topic.topic}`);
+        throw new Error();
+      }
+      const restored = _.mapValues(parsed.classifiers, phrase => classifier.restore(phrase));
+      classifiers[topic.topic] = restored;
+      console.log(`restored ${topic.topic}`);
+    } catch(err) {
+      classifiers[topic.topic] = GenerateTopicClassifier(topic, allPhrases);
+      const savable = {
+        classifiers: classifiers[topic.topic],
+        allPhrases: allPhrases,
+      };
+      fs.writeFileSync(jsonFile, JSON.stringify(savable), 'utf8');
+    }
   });
   // console.log(classifiers);
   return classifiers;
@@ -45,19 +82,22 @@ export function GenerateClassifier(topicsToLoad: Array<string | TopicCollection>
 function readInTopic(topic: string, directory: string): TopicCollection {
   // console.log('dir', directory);
   const actions = [];
-  fs.readdirSync(directory).filter(file => !_.startsWith(file, '.')).forEach(file => {
-    const key = /(.*).json/.exec(file);
-    // console.log(`loading '${key[1]}'`);
-    try {
-      const phrases = require(`${directory}/${file}`);
-      actions.push({action: key[1], phrases});
-    } catch (err) {
-      throw new Error(`Invalid JSON file ${directory}/${file}`);
-    }
-  });
+  fs.readdirSync(directory)
+    .filter(file => !_.startsWith(file, '.'))
+    .forEach(file => {
+      const key = /(.*).json/.exec(file);
+      // console.log(`loading '${key[1]}'`);
+      try {
+        const phrases = require(`${directory}/${file}`);
+        actions.push({action: key[1], phrases});
+      } catch (err) {
+        throw new Error(`Invalid JSON file ${directory}/${file}`);
+      }
+    });
   return {
     topic,
     actions,
+    location: directory,
   };
 }
 
@@ -101,4 +141,34 @@ export function GenerateTopicClassifier(topic: TopicCollection, allPhrases: Arra
   });
 
   return classifiers;
+}
+
+export function checkUsingClassifier(text: string, classifier: any, label: string, topic: string): Classification {
+  const result = classifier.getClassifications(text)[0];
+  if (result.label === 'false') {
+    return null;
+  }
+  return {
+    label: label.replace(/-/g, ' '),
+    topic,
+    value: result.value,
+  };
+}
+
+export function runThroughClassifiers(text: string, classifiers: Classifiers, dump: Boolean = false) {
+  const filtered: Array<Array<Classification>> = _.map(classifiers, (classifiers: Classifiers, topic: string) => {
+    const trueClassifications = _.map(classifiers, (classifier, label) => checkUsingClassifier(text, classifier, label, topic));
+    // console.log(topic, trueClassifications);
+    return _.compact(trueClassifications);
+  }) as any;
+
+  let compacted: Array<Classification> = _.compact(_.flatten(filtered));
+  // if (this && this.debugOn) { console.log('compacted', util.inspect(compacted, { depth: null })); };
+  if (dump) { console.log('compacted', util.inspect(compacted, { depth: null })); }
+  if (classifier === natural.LogisticRegressionClassifier) {
+    compacted = compacted.filter(result => result.value > 0.6);
+  }
+  // if (this && this.debugOn) { console.log('filtered compacted', util.inspect(compacted, { depth: null })); };
+
+  return compacted
 }

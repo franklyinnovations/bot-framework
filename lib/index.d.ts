@@ -4,7 +4,9 @@ export { TopicCollection } from './classifier';
 export interface Intent {
     action: string;
     topic: string;
-    details?: any;
+    details: {
+        confidence: number;
+    } | any;
 }
 export interface User {
     conversation?: Array<string>;

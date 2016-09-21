@@ -11,7 +11,9 @@ export { TopicCollection } from './classifier';
 export interface Intent {
   action: string;
   topic: string;
-  details?: any;
+  details: {
+    confidence: number;
+  } | any;
 }
 
 export interface User {
@@ -80,7 +82,9 @@ export default class ChatBot {
   public createEmptyIntent(): Intent {
     return {
       action: null,
-      details: {},
+      details: {
+        confidence: 0,
+      },
       topic: null,
     };
   }
@@ -143,10 +147,17 @@ export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
 
 export function defaultReducer(intents: Array<Intent>): Promise<Intent> {
   return Promise.resolve(_.compact(intents))
+    .then((validIntents: Array<Intent>) => _.orderBy(validIntents, (intent: Intent) => intent.details.confidence || 0, 'desc'))
     .then((validIntents: Array<Intent>) => {
       if (this.debugOn) { console.log('validIntents', util.inspect(validIntents, { depth: null })); };
       if (validIntents.length === 0) {
-        const unknownIntent: Intent = { action: 'none', topic: null };
+        const unknownIntent: Intent = {
+          action: 'none',
+          details: {
+            confidence: 0,
+          },
+          topic: null,
+        };
         return unknownIntent;
       }
       const mergedDetails = _.defaults.apply(this, validIntents.map(intent => intent.details));

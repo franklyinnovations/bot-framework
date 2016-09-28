@@ -39,4 +39,5 @@ export default class ChatBot {
     processText<U extends User>(user: U, text: string): Promise<U>;
 }
 export declare function baseBotTextNLP(text: string): Promise<Array<Intent>>;
+export declare function locationNLP(text: string): Promise<Array<Intent>>;
 export declare function defaultReducer(intents: Array<Intent>): Promise<Intent>;

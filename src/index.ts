@@ -1,10 +1,11 @@
 import * as _ from 'lodash';
 import * as Promise from 'bluebird';
 import * as util from 'util';
-
 import * as natural from 'natural';
+const tokenizer = new natural.WordTokenizer();
+
 import { classifier, GenerateClassifier, TopicCollection, Classifiers, Classification, checkUsingClassifier, runThroughClassifiers } from './classifier';
-import { grabTopics } from './helpers';
+import { grabTopics, locatonExtractor, getLocationConfidence } from './helpers';
 
 export { TopicCollection } from './classifier';
 
@@ -47,7 +48,7 @@ export default class ChatBot {
     const allClassifiers = GenerateClassifier(classifierFiles.concat(defaultClassifierDirectories));
     this.classifiers = allClassifiers;
     // console.log(_.keys(this.classifiers));
-    this.intents = [ baseBotTextNLP.bind(this), grabTopics.bind(this) ];
+    this.intents = [ baseBotTextNLP.bind(this), locationNLP.bind(this), grabTopics.bind(this) ];
     this.skills = [];
     this.reducer = defaultReducer.bind(this);
     this.debugOn = false;
@@ -145,6 +146,26 @@ export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
   return Promise.resolve(intents);
 }
 
+export function locationNLP(text: string): Promise<Array<Intent>> {
+  const locations = locatonExtractor(text);
+  if (_.keys(locations).length === 0) {
+    return Promise.resolve([]);
+  }
+
+  const action: string = _.keys(locations)[0];
+  const city: string = locations[action][0];
+
+  const intent: Intent = {
+    topic: 'locations',
+    action: action,
+    details: {
+      confidence: getLocationConfidence(text, city),
+    },
+  };
+
+  return Promise.resolve([intent]);
+}
+
 export function defaultReducer(intents: Array<Intent>): Promise<Intent> {
   return Promise.resolve(_.compact(intents))
     .then((validIntents: Array<Intent>) => _.orderBy(validIntents, (intent: Intent) => intent.details.confidence || 0, 'desc'))
@@ -163,12 +184,6 @@ export function defaultReducer(intents: Array<Intent>): Promise<Intent> {
       const mergedDetails = _.defaults.apply(this, validIntents.map(intent => intent.details));
       const firstIntent = validIntents[0];
       firstIntent.details = mergedDetails;
-      if (firstIntent.topic === 'details') {
-        if (_.keys(firstIntent.details.locations).length > 0) {
-          firstIntent.topic = 'locations';
-          firstIntent.action = _.keys(firstIntent.details.locations)[0];
-        }
-      }
       if (this.debugOn) { console.log(firstIntent); };
       return firstIntent;
     });

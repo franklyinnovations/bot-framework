@@ -28,6 +28,8 @@ export interface Classification {
   value: number;
 }
 
+export type filename = string;
+
 function onlyDirectories(name: string): boolean {
   return !(_.startsWith(name, '.') || _.endsWith(name, '.json'));
 }
@@ -35,7 +37,7 @@ function onlyDirectories(name: string): boolean {
 export const classifier = natural.LogisticRegressionClassifier;
 // export const classifier = natural.BayesClassifier;
 
-export function GenerateClassifier(topicsToLoad: Array<string | TopicCollection>): Classifiers {
+export function GenerateClassifier(topicsToLoad: Array<filename | TopicCollection>): Classifiers {
   const topics: Array<TopicCollection> = topicsToLoad.filter(element => typeof element !== 'string') as Array<TopicCollection>;
   const classifiers: Classifiers = {};
 
@@ -54,6 +56,10 @@ export function GenerateClassifier(topicsToLoad: Array<string | TopicCollection>
   // console.log('ap:', util.inspect(allPhrases, {depth:null}));
 
   topics.forEach(topic => {
+    if (topic.location === null) {
+      classifiers[topic.topic] = GenerateTopicClassifier(topic, allPhrases);
+      return;
+    }
     const jsonFile = `${topic.location}/../${topic.topic}.json`;
     try {
       const stringed = fs.readFileSync(jsonFile, 'utf8');

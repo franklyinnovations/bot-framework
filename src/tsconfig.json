@@ -11,8 +11,8 @@
         "node_modules"
     ],
     "files": [
-      "typings/index.d.ts",
       "custom_typings/nlp_compomise.d.ts",
-      "index.ts"
+      "index.ts",
+      "compile.ts"
     ]
 }

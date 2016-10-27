@@ -1,3 +1,4 @@
+/// <reference types="bluebird" />
 import * as Promise from 'bluebird';
 import { TopicCollection, Classifiers } from './classifier';
 export { TopicCollection } from './classifier';
@@ -22,6 +23,7 @@ export interface SkillFunction {
 export interface ReducerFunction {
     (intents: Array<Intent>, user?: User): Promise<Intent>;
 }
+export declare const defaultClassifierDirectories: Array<string>;
 export default class ChatBot {
     classifiers: Classifiers;
     private intents;
@@ -29,11 +31,14 @@ export default class ChatBot {
     private reducer;
     private debugOn;
     constructor(classifierFiles?: Array<string | TopicCollection>);
+    addIntent(newIntent: IntentFunction): this;
     unshiftIntent(newIntent: IntentFunction): this;
+    addSkill(newSkill: SkillFunction): this;
     unshiftSkill(newSkill: SkillFunction): this;
     setReducer(newReducer: ReducerFunction): this;
     turnOnDebug(): this;
     retrainClassifiers(classifierFiles?: Array<string | TopicCollection>): void;
+    getTopics(): any;
     createEmptyIntent(): Intent;
     createEmptyUser(defaults?: any): User;
     processText<U extends User>(user: U, text: string): Promise<U>;

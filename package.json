@@ -1,12 +1,13 @@
 {
   "name": "botler",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Bot framework for contextual chatbots",
   "main": "lib/index.js",
   "typings": "lib/index",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublish": "tsc --project ./src/"
+    "build": "tsc --project ./src/",
+    "test": "npm run build && mocha",
+    "prepublish": "npm run build && node lib/compile"
   },
   "keywords": [
     "bot",
@@ -21,16 +22,20 @@
   "author": "Adam Juhasz",
   "license": "MIT",
   "dependencies": {
+    "@types/bluebird": "^3.0.35",
     "bluebird": "^3.4.1",
     "lodash": "^4.11.0",
     "natural": "^0.4.0",
     "nlp_compromise": "^6.5.0"
   },
   "devDependencies": {
+
+    "@types/lodash": "^4.14.37",
+    "@types/natural": "^0.2.31",
+    "@types/node": "^6.0.45",
     "chai": "^3.5.0",
     "mocha": "^2.5.3",
-    "typescript": "^1.8.10",
-    "typings": "^1.0.4"
+    "typescript": "^2.0.3"
   },
   "preferGlobal": false
 }

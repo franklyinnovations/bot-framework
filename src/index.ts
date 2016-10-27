@@ -1,8 +1,6 @@
 import * as _ from 'lodash';
 import * as Promise from 'bluebird';
 import * as util from 'util';
-import * as natural from 'natural';
-const tokenizer = new natural.WordTokenizer();
 
 import { classifier, GenerateClassifier, TopicCollection, Classifiers, Classification, checkUsingClassifier, runThroughClassifiers } from './classifier';
 import { grabTopics, locatonExtractor, getLocationConfidence } from './helpers';
@@ -35,7 +33,7 @@ export interface ReducerFunction {
   (intents: Array<Intent>, user?: User): Promise<Intent>;
 }
 
-const defaultClassifierDirectories: Array<string> = [`${__dirname}/../nlp/phrases`];
+export const defaultClassifierDirectories: Array<string> = [`${__dirname}/../nlp/phrases`];
 
 export default class ChatBot {
   public classifiers: Classifiers;
@@ -44,8 +42,8 @@ export default class ChatBot {
   private reducer: ReducerFunction;
   private debugOn: Boolean;
 
-  constructor(classifierFiles: Array<string|TopicCollection> = []) {
-    const allClassifiers = GenerateClassifier(classifierFiles.concat(defaultClassifierDirectories));
+  constructor(classifierFiles: Array<string|TopicCollection> = defaultClassifierDirectories) {
+    const allClassifiers = GenerateClassifier(classifierFiles);
     this.classifiers = allClassifiers;
     // console.log(_.keys(this.classifiers));
     this.intents = [ baseBotTextNLP.bind(this), locationNLP.bind(this), grabTopics.bind(this) ];
@@ -55,8 +53,18 @@ export default class ChatBot {
     return this;
   }
 
+  public addIntent(newIntent: IntentFunction) {
+    this.intents = [].concat(this.intents, newIntent.bind(this));
+    return this;
+  }
+
   public unshiftIntent(newIntent: IntentFunction) {
     this.intents = [].concat(newIntent.bind(this), this.intents);
+    return this;
+  }
+
+  public addSkill(newSkill: SkillFunction) {
+    this.skills = [].concat(this.skills, newSkill.bind(this));
     return this;
   }
 
@@ -75,9 +83,14 @@ export default class ChatBot {
     return this;
   }
 
-  public retrainClassifiers(classifierFiles: Array<string|TopicCollection> = []) {
-    const allClassifiers = GenerateClassifier(classifierFiles.concat(defaultClassifierDirectories));
+  public retrainClassifiers(classifierFiles: Array<string|TopicCollection> = defaultClassifierDirectories) {
+    const allClassifiers = GenerateClassifier(classifierFiles);
     this.classifiers = allClassifiers;
+  }
+
+  public getTopics(): any {
+    const topics = _.mapValues(this.classifiers, (value, key) => _.keys(value).map(key => key.replace(/-/g, ' ')));
+    return topics;
   }
 
   public createEmptyIntent(): Intent {
@@ -123,7 +136,7 @@ export default class ChatBot {
 }
 
 export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
-  const compacted = runThroughClassifiers(text, this.classifiers);
+  const compacted = runThroughClassifiers(text, this.classifiers, true);
 
   if (compacted.length === 0) {
     return null;
@@ -156,11 +169,11 @@ export function locationNLP(text: string): Promise<Array<Intent>> {
   const city: string = locations[action][0];
 
   const intent: Intent = {
-    topic: 'locations',
     action: action,
     details: {
       confidence: getLocationConfidence(text, city),
     },
+    topic: 'locations',
   };
 
   return Promise.resolve([intent]);

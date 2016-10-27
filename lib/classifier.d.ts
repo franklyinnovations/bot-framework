@@ -20,6 +20,7 @@ export interface Classification {
     value: number;
 }
 export declare type filename = string;
+export declare function onlyDirectories(name: string): boolean;
 export declare const classifier: typeof natural.LogisticRegressionClassifier;
 export declare function GenerateClassifier(topicsToLoad: Array<filename | TopicCollection>): Classifiers;
 export declare function GenerateTopicClassifier(topic: TopicCollection, allPhrases: Array<string>): {

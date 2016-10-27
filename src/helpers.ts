@@ -21,7 +21,7 @@ export function grabTopics(text: string): Promise<Intent> {
   const datesCompacted = runThroughClassifiers(text, dateClassifiers);
   const datesGrouped = _.groupBy(datesCompacted, 'topic');
 
-  const specials = _.compact(tokenizer.tokenize(text).filter(token => parseInt(token, 10)));
+  const specials = _.compact(tokenizer.tokenize(text).filter(token => !isNaN(parseInt(token, 10))));
 
   const intent: Intent = {
     action: null,
@@ -43,7 +43,7 @@ function onlyDirectories(name: string): boolean {
 }
 
 function loadLocations(theDirectory: string): locationMap {
-  const readLocations = {};
+  const readLocations: locationMap = {};
   fs.readdirSync(theDirectory)
     .filter((aDirectory: string) => onlyDirectories(aDirectory))
     .forEach(topic => {

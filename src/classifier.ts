@@ -30,7 +30,7 @@ export interface Classification {
 
 export type filename = string;
 
-function onlyDirectories(name: string): boolean {
+export function onlyDirectories(name: string): boolean {
   return !(_.startsWith(name, '.') || _.endsWith(name, '.json'));
 }
 

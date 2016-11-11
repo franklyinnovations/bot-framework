@@ -3,6 +3,8 @@ import * as _ from 'lodash';
 import * as util from 'util'; // tslint:disable-line
 import * as fs from 'fs';
 
+const CURRENT_CLASSIFIER_VERSION = 1;
+
 export interface ActionCollection {
   action: string;
   phrases: Array<string>;
@@ -28,6 +30,14 @@ export interface Classification {
   value: number;
 }
 
+interface CacheFile {
+  phrases: Array<string>;
+  classifiers: {
+    [key: string]: any;
+  }
+  version: number;
+}
+
 export type filename = string;
 
 export function onlyDirectories(name: string): boolean {
@@ -37,11 +47,12 @@ export function onlyDirectories(name: string): boolean {
 export const classifier = natural.LogisticRegressionClassifier;
 // export const classifier = natural.BayesClassifier;
 
-export function GenerateClassifier(topicsToLoad: Array<filename | TopicCollection>): Classifiers {
+export function GenerateClassifier(topicsToLoad: Array<filename | TopicCollection>, cacheFileName?: string): Classifiers {
   const topics: Array<TopicCollection> = topicsToLoad.filter(element => typeof element !== 'string') as Array<TopicCollection>;
   const classifiers: Classifiers = {};
 
-  topicsToLoad.filter(directory => typeof directory === 'string')
+  topicsToLoad
+    .filter(directory => typeof directory === 'string')
     .filter((directory: string) => onlyDirectories(directory))
     .forEach((directory: string) => 
       fs.readdirSync(directory)
@@ -55,6 +66,31 @@ export function GenerateClassifier(topicsToLoad: Array<filename | TopicCollectio
   const allPhrases: string[] = _.chain(topicPhrases).flatten().flatten().value() as Array<string>;
   // console.log('ap:', util.inspect(allPhrases, {depth:null}));
 
+  if (_.isString(cacheFileName)) {
+    try {
+      const file = fs.readFileSync(cacheFileName, 'utf8');
+      const parsed: CacheFile = JSON.parse(file);
+      if (parsed.version !== CURRENT_CLASSIFIER_VERSION) {
+        throw new Error('Inoccect file version');
+      }
+      // console.log('parsed');
+      // console.log(parsed.phrases);
+      // console.log('all');
+      // console.log(allPhrases);
+      if (_.isEqual(parsed.phrases, allPhrases)) {
+        _.forIn(parsed.classifiers, (actions, topic) => {
+          // console.log(actions);
+          classifiers[topic] = _.mapValues(actions, phrase => classifier.restore(phrase));
+        });
+        return classifiers;
+      } else {
+        throw new Error('need to retrain');
+      }
+    } catch(err) {
+      console.log('can\'t load cached file', err);
+    }
+  }
+  
   topics.forEach(topic => {
     if (topic.location === null) {
       classifiers[topic.topic] = GenerateTopicClassifier(topic, allPhrases);
@@ -81,6 +117,16 @@ export function GenerateClassifier(topicsToLoad: Array<filename | TopicCollectio
       fs.writeFileSync(jsonFile, JSON.stringify(savable), 'utf8');
     }
   });
+
+  if (_.isString(cacheFileName)) {
+    const classifierModule: CacheFile = {
+      phrases: allPhrases,
+      classifiers: classifiers,
+      version: CURRENT_CLASSIFIER_VERSION,
+    };
+    fs.writeFileSync(cacheFileName, JSON.stringify(classifierModule), 'utf8')
+  }
+
   // console.log(classifiers);
   return classifiers;
 }

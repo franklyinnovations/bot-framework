@@ -4,22 +4,10 @@ import * as util from 'util';
 
 import { classifier, GenerateClassifier, TopicCollection, Classifiers, Classification, checkUsingClassifier, runThroughClassifiers } from './classifier';
 import { grabTopics, locatonExtractor, getLocationConfidence } from './helpers';
+import { Platform } from './types/platform';
+import { Intent, User } from './types/bot';
 
 export { TopicCollection } from './classifier';
-
-export interface Intent {
-  action: string;
-  topic: string;
-  details: {
-    confidence: number;
-  } | any;
-}
-
-export interface User {
-  conversation?: Array<string>;
-  state: any;
-  intent: Intent;
-}
 
 export interface IntentFunction {
   (text: string, user?: User): Promise<Intent>;
@@ -33,6 +21,8 @@ export interface ReducerFunction {
   (intents: Array<Intent>, user?: User): Promise<Intent>;
 }
 
+// export type Session = 
+
 export const defaultClassifierDirectories: Array<string> = [`${__dirname}/../nlp/phrases`];
 
 export default class ChatBot {
@@ -43,7 +33,7 @@ export default class ChatBot {
   private debugOn: Boolean;
 
   constructor(classifierFiles: Array<string|TopicCollection> = defaultClassifierDirectories) {
-    const allClassifiers = GenerateClassifier(classifierFiles);
+    const allClassifiers = GenerateClassifier(classifierFiles, `${__dirname}/../nlp/classifiers.json`);
     this.classifiers = allClassifiers;
     // console.log(_.keys(this.classifiers));
     this.intents = [ baseBotTextNLP.bind(this), locationNLP.bind(this), grabTopics.bind(this) ];
@@ -83,6 +73,10 @@ export default class ChatBot {
     return this;
   }
 
+  public getUser() {
+    return this;
+  }
+
   public retrainClassifiers(classifierFiles: Array<string|TopicCollection> = defaultClassifierDirectories) {
     const allClassifiers = GenerateClassifier(classifierFiles);
     this.classifiers = allClassifiers;
@@ -105,6 +99,8 @@ export default class ChatBot {
 
   public createEmptyUser(defaults: any = {}): User {
     const anEmptyUser: User = {
+      id: null,
+      platform: null;
       conversation: [],
       intent: this.createEmptyIntent(),
       state: 'none',
@@ -133,10 +129,14 @@ export default class ChatBot {
       })
       .then(() => Promise.resolve(user));
   }
+
+  public addPlatform() {
+    return thus
+  }
 }
 
 export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
-  const compacted = runThroughClassifiers(text, this.classifiers, true);
+  const compacted = runThroughClassifiers(text, this.classifiers);
 
   if (compacted.length === 0) {
     return null;

@@ -1,11 +1,11 @@
 {
   "name": "botler",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "Bot framework for contextual chatbots",
   "main": "lib/index.js",
   "typings": "lib/index",
   "scripts": {
-    "build": "tsc --project ./src/",
+    "build": "tsc",
     "test": "npm run build && mocha",
     "prepublish": "npm run build && node lib/compile"
   },
@@ -24,12 +24,11 @@
   "dependencies": {
     "@types/bluebird": "^3.0.35",
     "bluebird": "^3.4.1",
+    "facebook-send-api": "^2.6.0",
     "lodash": "^4.11.0",
-    "natural": "^0.4.0",
-    "nlp_compromise": "^6.5.0"
+    "natural": "^0.4.0"
   },
   "devDependencies": {
-
     "@types/lodash": "^4.14.37",
     "@types/natural": "^0.2.31",
     "@types/node": "^6.0.45",

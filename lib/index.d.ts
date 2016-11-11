@@ -1,6 +1,7 @@
 /// <reference types="bluebird" />
 import * as Promise from 'bluebird';
 import { TopicCollection, Classifiers } from './classifier';
+import { Platform } from './types/platform';
 export { TopicCollection } from './classifier';
 export interface Intent {
     action: string;
@@ -23,6 +24,11 @@ export interface SkillFunction {
 export interface ReducerFunction {
     (intents: Array<Intent>, user?: User): Promise<Intent>;
 }
+export interface _Session {
+    user: User;
+    intern: Intent;
+}
+export declare type Session = _Session & Platform;
 export declare const defaultClassifierDirectories: Array<string>;
 export default class ChatBot {
     classifiers: Classifiers;

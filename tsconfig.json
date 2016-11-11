@@ -1,18 +1,17 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "target": "es5",
+        "target": "es6",
         "noImplicitAny": false,
         "sourceMap": false,
-        "outDir": "../lib",
+        "outDir": "lib",
         "declaration": true
     },
     "exclude": [
         "node_modules"
     ],
-    "files": [
+    "include": [
       "custom_typings/nlp_compomise.d.ts",
-      "index.ts",
-      "compile.ts"
+      "src/**/*"
     ]
 }

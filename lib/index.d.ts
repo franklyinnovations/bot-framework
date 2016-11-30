@@ -1,20 +1,8 @@
 /// <reference types="bluebird" />
 import * as Promise from 'bluebird';
 import { TopicCollection, Classifiers } from './classifier';
-import { Platform } from './types/platform';
+import { Intent, User } from './types/bot';
 export { TopicCollection } from './classifier';
-export interface Intent {
-    action: string;
-    topic: string;
-    details: {
-        confidence: number;
-    } | any;
-}
-export interface User {
-    conversation?: Array<string>;
-    state: any;
-    intent: Intent;
-}
 export interface IntentFunction {
     (text: string, user?: User): Promise<Intent>;
 }
@@ -24,11 +12,6 @@ export interface SkillFunction {
 export interface ReducerFunction {
     (intents: Array<Intent>, user?: User): Promise<Intent>;
 }
-export interface _Session {
-    user: User;
-    intern: Intent;
-}
-export declare type Session = _Session & Platform;
 export declare const defaultClassifierDirectories: Array<string>;
 export default class ChatBot {
     classifiers: Classifiers;
@@ -43,11 +26,13 @@ export default class ChatBot {
     unshiftSkill(newSkill: SkillFunction): this;
     setReducer(newReducer: ReducerFunction): this;
     turnOnDebug(): this;
+    getUser(): this;
     retrainClassifiers(classifierFiles?: Array<string | TopicCollection>): void;
     getTopics(): any;
     createEmptyIntent(): Intent;
     createEmptyUser(defaults?: any): User;
     processText<U extends User>(user: U, text: string): Promise<U>;
+    addPlatform(): any;
 }
 export declare function baseBotTextNLP(text: string): Promise<Array<Intent>>;
 export declare function locationNLP(text: string): Promise<Array<Intent>>;

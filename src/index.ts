@@ -4,22 +4,13 @@ import * as util from 'util';
 
 import { classifier, GenerateClassifier, TopicCollection, Classifiers, Classification, checkUsingClassifier, runThroughClassifiers } from './classifier';
 import { grabTopics, locatonExtractor, getLocationConfidence } from './helpers';
-import { Platform } from './types/platform';
-import { Intent, User } from './types/bot';
+import { PlatformMiddleware } from './types/platform';
+import { Intent, IncomingMessage, IntentFunction, ReducerFunction, ScriptFunction } from './types/bot';
+import { UserMiddleware, User } from './types/user';
 
 export { TopicCollection } from './classifier';
 
-export interface IntentFunction {
-  (text: string, user?: User): Promise<Intent>;
-}
-
-export interface SkillFunction {
-  (user: User): Promise<User>;
-}
-
-export interface ReducerFunction {
-  (intents: Array<Intent>, user?: User): Promise<Intent>;
-}
+import MemoryStorage from './storage/memory';
 
 // export type Session = 
 
@@ -27,19 +18,20 @@ export const defaultClassifierDirectories: Array<string> = [`${__dirname}/../nlp
 
 export default class ChatBot {
   public classifiers: Classifiers;
-  private intents: Array<IntentFunction>;
-  private skills: Array<SkillFunction>;
+  private intents: Array<IntentFunction> = [];
   private reducer: ReducerFunction;
-  private debugOn: Boolean;
+  private debugOn: Boolean = false;
+  private userMiddleware: UserMiddleware;
+  private platforms: Array<PlatformMiddleware> = [];
+  private scripts: { [key: string]: { [key: string]: Array<ScriptFunction> } };
 
   constructor(classifierFiles: Array<string|TopicCollection> = defaultClassifierDirectories) {
     const allClassifiers = GenerateClassifier(classifierFiles, `${__dirname}/../nlp/classifiers.json`);
     this.classifiers = allClassifiers;
     // console.log(_.keys(this.classifiers));
     this.intents = [ baseBotTextNLP.bind(this), locationNLP.bind(this), grabTopics.bind(this) ];
-    this.skills = [];
     this.reducer = defaultReducer.bind(this);
-    this.debugOn = false;
+    this.setUserMiddlware(new MemoryStorage());
     return this;
   }
 
@@ -53,18 +45,25 @@ export default class ChatBot {
     return this;
   }
 
-  public addSkill(newSkill: SkillFunction) {
-    this.skills = [].concat(this.skills, newSkill.bind(this));
-    return this;
-  }
-
-  public unshiftSkill(newSkill: SkillFunction) {
-    this.skills = [].concat(newSkill.bind(this), this.skills);
-    return this;
+  public _addScript(topic: string, action: string, script: ScriptFunction) {
+    if (_.isArray(this.scripts[topic][action]) === false) {
+      this.s
+    }
+    this.scripts[topic][action].push(script);
   }
 
   public setReducer(newReducer: ReducerFunction) {
     this.reducer = newReducer.bind(this);
+    return this;
+  }
+
+  public setUserMiddlware(middleware: UserMiddleware) {
+    this.userMiddleware = middleware;
+    return this;
+  }
+
+  public addPlatform(platform: PlatformMiddleware) {
+    this.platforms.push(platform);
     return this;
   }
 
@@ -99,20 +98,29 @@ export default class ChatBot {
 
   public createEmptyUser(defaults: any = {}): User {
     const anEmptyUser: User = {
-      id: null,
-      platform: null;
       conversation: [],
+      id: null,
       intent: this.createEmptyIntent(),
+      platform: null,
       state: 'none',
     };
     return _.defaults(anEmptyUser, defaults) as User;
   }
 
-  public processText<U extends User>(user: U, text: string): Promise<U> {
+  public start() {
+    this.platforms.forEach(platform => platform.start());
+  }
+
+  public stop() {
+    this.platforms.forEach(platform => platform.stop());
+  }
+
+  public processMessage<U extends User>(user: U, message: IncomingMessage): Promise<U> {
     if (typeof user.conversation === 'undefined') {
       user.conversation = [];
     }
-    user.conversation = user.conversation.concat(text);
+
+    user.conversation = user.conversation.concat(message);
     return Promise.map(this.intents, intent => intent(text, user))
       .then(_.flatten)
       .then(_.compact)
@@ -128,10 +136,6 @@ export default class ChatBot {
         return null;
       })
       .then(() => Promise.resolve(user));
-  }
-
-  public addPlatform() {
-    return thus
   }
 }
 

@@ -1,21 +1,9 @@
 {
-  "name": "botler-template",
-  "version": "1.0.0",
-  "description": "Template for botler",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": [
-    "bot",
-    "chatbot",
-    "typescript"
-  ],
-  "author": "Adam Juhasz",
-  "license": "MIT",
   "dependencies": {
-    "botler": "file:.."
-  },
-  "private": true,
-  "preferGlobal": false
+    "botler": "latest"
+  }
 }

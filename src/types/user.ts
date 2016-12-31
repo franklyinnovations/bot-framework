@@ -1,4 +1,3 @@
-import Botler from '../index';
 import * as Bot from './bot';
 
 export interface User {
@@ -6,7 +5,6 @@ export interface User {
   platform: string;
   conversation: Array<Bot.IncomingMessage>;
   state: any;
-  intent: Bot.Intent;
 }
 
 // Storage middlwware

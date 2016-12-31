@@ -1,24 +1,22 @@
 import * as _ from 'lodash';
 import * as Promise from 'bluebird';
-import * as util from 'util';
 
 import { classifier, GenerateClassifier, TopicCollection, Classifiers, Classification, checkUsingClassifier, runThroughClassifiers } from './classifier';
-import { grabTopics, locatonExtractor, getLocationConfidence } from './helpers';
 import { PlatformMiddleware } from './types/platform';
-import { Intent, IncomingMessage, IntentFunction, ReducerFunction, ScriptFunction } from './types/bot';
+import { Intent, IncomingMessage, IntentGenerator, ReducerFunction, ScriptFunction, GreetingFunction } from './types/bot';
 import { UserMiddleware, User } from './types/user';
 
 export { TopicCollection } from './classifier';
 
 import MemoryStorage from './storage/memory';
-
+import defaultReducer from './default-reducer';
+import NLPEngine from './nlp';
 // export type Session = 
 
 export const defaultClassifierDirectories: Array<string> = [`${__dirname}/../nlp/phrases`];
 
 export default class ChatBot {
-  public classifiers: Classifiers;
-  private intents: Array<IntentFunction> = [];
+  private intents: Array<IntentGenerator> = [];
   private reducer: ReducerFunction;
   private debugOn: Boolean = false;
   private userMiddleware: UserMiddleware;
@@ -26,30 +24,47 @@ export default class ChatBot {
   private scripts: { [key: string]: { [key: string]: Array<ScriptFunction> } };
 
   constructor(classifierFiles: Array<string|TopicCollection> = defaultClassifierDirectories) {
-    const allClassifiers = GenerateClassifier(classifierFiles, `${__dirname}/../nlp/classifiers.json`);
-    this.classifiers = allClassifiers;
+    const engine = new NLPEngine(classifierFiles);
     // console.log(_.keys(this.classifiers));
-    this.intents = [ baseBotTextNLP.bind(this), locationNLP.bind(this), grabTopics.bind(this) ];
+    this.intents = [ engine ];
     this.reducer = defaultReducer.bind(this);
     this.setUserMiddlware(new MemoryStorage());
     return this;
   }
 
-  public addIntent(newIntent: IntentFunction) {
-    this.intents = [].concat(this.intents, newIntent.bind(this));
+  public addIntent(newIntent: IntentGenerator) {
+    this.intents = [].concat(this.intents, newIntent);
     return this;
   }
 
-  public unshiftIntent(newIntent: IntentFunction) {
-    this.intents = [].concat(newIntent.bind(this), this.intents);
+  public unshiftIntent(newIntent: IntentGenerator) {
+    this.intents = [].concat(newIntent, this.intents);
     return this;
   }
 
   public _addScript(topic: string, action: string, script: ScriptFunction) {
-    if (_.isArray(this.scripts[topic][action]) === false) {
-      this.s
+    if (_.has(this.scripts, [topic, action]) === false) {
+      _.set(this.scripts, [topic, action], []);
     }
     this.scripts[topic][action].push(script);
+    return this;
+  }
+
+  public addScript() {
+    if (arguments.length === 3) {
+      return this._addScript(arguments[0], arguments[1], arguments[3]);
+    }
+    if (arguments.length === 2) {
+      return this._addScript(arguments[0], '', arguments[1]);
+    }
+    if (arguments.length === 1) {
+      return this._addScript('', '', arguments[0]);
+    }
+    throw new Error('Bad argument count');
+  }
+
+  public addGreeting(scriot: GreetingFunction) {
+    return this;
   }
 
   public setReducer(newReducer: ReducerFunction) {
@@ -74,16 +89,6 @@ export default class ChatBot {
 
   public getUser() {
     return this;
-  }
-
-  public retrainClassifiers(classifierFiles: Array<string|TopicCollection> = defaultClassifierDirectories) {
-    const allClassifiers = GenerateClassifier(classifierFiles);
-    this.classifiers = allClassifiers;
-  }
-
-  public getTopics(): any {
-    const topics = _.mapValues(this.classifiers, (value, key) => _.keys(value).map(key => key.replace(/-/g, ' ')));
-    return topics;
   }
 
   public createEmptyIntent(): Intent {
@@ -115,93 +120,44 @@ export default class ChatBot {
     this.platforms.forEach(platform => platform.stop());
   }
 
-  public processMessage<U extends User>(user: U, message: IncomingMessage): Promise<U> {
+  public processMessage<U extends User>(user: U, message: IncomingMessage): Promise<void> {
     if (typeof user.conversation === 'undefined') {
       user.conversation = [];
     }
 
     user.conversation = user.conversation.concat(message);
-    return Promise.map(this.intents, intent => intent(text, user))
-      .then(_.flatten)
-      .then(_.compact)
-      .then((intents: Array<Intent>) => this.reducer(intents, user))
+    return this.getIntents(user, message)
+      .then(intents => this.reducer(intents, user))
       .then(intent => {
-        user.intent = intent;
-        for (let i = 0; i < this.skills.length; i++) {
-          const result = this.skills[i](user);
-          if (result !== null) {
-            return result;
-          }
+        const topic = intent.topic;
+        const action = intent.action;
+        let validScripts: Array<ScriptFunction> = [];
+        if (_.has(this.scripts, [topic, action])) {
+          validScripts = validScripts.concat(this.scripts[topic][action]);
         }
-        return null;
-      })
-      .then(() => Promise.resolve(user));
-  }
-}
-
-export function baseBotTextNLP(text: string): Promise<Array<Intent>> {
-  const compacted = runThroughClassifiers(text, this.classifiers);
-
-  if (compacted.length === 0) {
-    return null;
-  }
-  const sorted: Array<Classification> = _.orderBy(compacted, ['value'], 'desc');
-  if (this && this.debugOn) { console.log(`${text}\n${util.inspect(sorted, { depth:null })}`); };
-
-  const intents: Array<Intent> = sorted.map(intent => {
-    const baseIntent: Intent = {
-      action: intent.label,
-      details: {
-        confidence: intent.value,
-      },
-      topic: intent.topic,
-    };
-
-    return baseIntent;
-  });
-
-  return Promise.resolve(intents);
-}
-
-export function locationNLP(text: string): Promise<Array<Intent>> {
-  const locations = locatonExtractor(text);
-  if (_.keys(locations).length === 0) {
-    return Promise.resolve([]);
+        if (_.has(this.scripts, [topic, ''])) {
+          validScripts = validScripts.concat(this.scripts[topic]['']);
+        }
+        if (_.has(this.scripts, ['', ''])) {
+          validScripts = validScripts.concat(this.scripts['']['']);
+        }
+        return this.callScript(user, message, validScripts);
+      });
   }
 
-  const action: string = _.keys(locations)[0];
-  const city: string = locations[action][0];
+  private getIntents(user: User, message: IncomingMessage): Promise<Array<Intent>> {
+    return Promise.map(this.intents, intent => intent.getIntents(message, user))
+      .then(_.flatten)
+      .then(_.compact);
+  }
 
-  const intent: Intent = {
-    action: action,
-    details: {
-      confidence: getLocationConfidence(text, city),
-    },
-    topic: 'locations',
-  };
-
-  return Promise.resolve([intent]);
-}
-
-export function defaultReducer(intents: Array<Intent>): Promise<Intent> {
-  return Promise.resolve(_.compact(intents))
-    .then((validIntents: Array<Intent>) => _.orderBy(validIntents, (intent: Intent) => intent.details.confidence || 0, 'desc'))
-    .then((validIntents: Array<Intent>) => {
-      if (this.debugOn) { console.log('validIntents', util.inspect(validIntents, { depth: null })); };
-      if (validIntents.length === 0) {
-        const unknownIntent: Intent = {
-          action: 'none',
-          details: {
-            confidence: 0,
-          },
-          topic: null,
-        };
-        return unknownIntent;
-      }
-      const mergedDetails = _.defaults.apply(this, validIntents.map(intent => intent.details));
-      const firstIntent = validIntents[0];
-      firstIntent.details = mergedDetails;
-      if (this.debugOn) { console.log(firstIntent); };
-      return firstIntent;
-    });
+  private callScript(user: User, message: IncomingMessage, scripts: Array<ScriptFunction>): Promise<void> {
+    if (scripts.length > 0) {
+      return Promise.resolve();
+    }
+    const currentScript = _.head(scripts);
+    const nextScripts = _.tail(scripts);
+    const nextFunction = this.callScript.bind(this, user, message, nextScripts);
+    return Promise.resolve(currentScript(user, message, nextFunction));
+  }
 }

@@ -127,3 +127,11 @@ receiveFromUser(emptyUser, 'hi')
   .then((user: User) => {
     return receiveFromUser(user, 'How about at 10004');
   });
+
+function runHello(expect, next) {
+  //we save all previous intents so we can run throgh all of these in order
+  expect('general', 'hi')
+    .then(() => this.send.text('What\'s your zip code?'));
+  expect('special', 'zip')
+    .then(() => this.send.text('Your weather will be nice'));
+}

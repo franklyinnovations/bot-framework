@@ -1,4 +1,5 @@
 import { User } from './user';
+import { ScriptState } from '../script';
 
 export interface Intent {
   action: string;
@@ -16,6 +17,18 @@ export interface Session {
     createButtons: () => ButtonMessage;
     createCarousel: () => CarouselMessage;
     createQuickReplies: () => QuickReplies;
+    private: PrivateBotData;
+    conversation: Conversation;
+}
+
+export interface PrivateBotData {
+    conversation: {
+        scripts: ScriptState[];
+    };
+}
+
+export interface Conversation {
+    user: User;
 }
 
 export interface IncomingMessage {
@@ -24,17 +37,28 @@ export interface IncomingMessage {
     url: string;
 };
 
+export interface Incoming {
+    user: User;
+    message: IncomingMessage;
+    intent: Intent;
+};
+
+export interface OutgoingMessage {
+    sendText: (text: string) => void;
+}
+
 export interface _Message {
     title(title: string): this;
-    text(text: string): this;
+    text(text: string): this | string;
     subtitle(sutitle: string): this;
     postbackButton(text: string, postback: string): this;
     urlButton(text: string, url: string): this;
     image(url: string): this;
 }
 
-export type NextFunction = () => void;
-export type ScriptFunction = (user: User, incoming: IncomingMessage, next: NextFunction) => void;
+export type NextFunction = () => Promise<void>;
+export type ScriptFunction = (user: User, incoming: IncomingMessage, response: OutgoingMessage, next: NextFunction) => Promise<void>;
+export type GreetingFunction = (user: User, response: OutgoingMessage) => Promise<void>;
 
 export interface Element extends _Message {
 
@@ -44,10 +68,7 @@ export interface Message extends _Message {
     send: () => Promise<any>;
 }
 
-export declare class TextMessage {
-    public text: string;
-    text(): this;
-    send(): Promise<this>
+export interface TextMessage extends Message {
 }
 
 export interface ButtonMessage extends Message {
@@ -69,8 +90,8 @@ export interface Button {
     url?: string;
 }
 
-export interface IntentFunction {
-  (text: string, user?: User): Promise<Intent>;
+export declare class IntentGenerator {
+    public getIntents: (message: IncomingMessage, user: User) => Promise<Array<Intent>>;
 }
 
 export interface SkillFunction {

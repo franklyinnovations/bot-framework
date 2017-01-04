@@ -1,5 +1,6 @@
 import { Intent } from './types/bot';
 import * as util from 'util';
+import * as _ from 'lodash';
 
 export default function defaultReducer(intents: Array<Intent>): Promise<Intent> {
   return Promise.resolve(_.compact(intents))

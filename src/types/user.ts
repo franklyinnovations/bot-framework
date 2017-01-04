@@ -1,10 +1,13 @@
 import * as Bot from './bot';
+import { PlatformMiddleware } from './platform';
 
 export interface User {
   id: string;
   platform: string;
   conversation: Array<Bot.IncomingMessage>;
   state: any;
+  script: string;
+  _platform: PlatformMiddleware;
 }
 
 // Storage middlwware

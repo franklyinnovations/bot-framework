@@ -3,29 +3,36 @@ import * as Promise from 'bluebird';
 
 import { classifier, GenerateClassifier, TopicCollection, Classifiers, Classification, checkUsingClassifier, runThroughClassifiers } from './classifier';
 import { PlatformMiddleware } from './types/platform';
-import { Intent, IncomingMessage, IntentGenerator, ReducerFunction, ScriptFunction, GreetingFunction } from './types/bot';
+import { Intent, Incoming, Outgoing, IncomingMessage, IntentGenerator, ReducerFunction, ScriptFunction, GreetingFunction } from './types/bot';
 import { UserMiddleware, User } from './types/user';
 
 export { TopicCollection } from './classifier';
+export { Intent, PlatformMiddleware };
+
+import * as Platforms from './platforms';
+export { Platforms };
 
 import MemoryStorage from './storage/memory';
 import defaultReducer from './default-reducer';
 import NLPEngine from './nlp';
-// export type Session = 
+import Script from './script';
+import OutgoingClass from './outgoing';
 
 export const defaultClassifierDirectories: Array<string> = [`${__dirname}/../nlp/phrases`];
 
-export default class ChatBot {
+const DEFAULT_SCRIPT = '';
+
+export default class Botler {
   private intents: Array<IntentGenerator> = [];
   private reducer: ReducerFunction;
   private debugOn: Boolean = false;
   private userMiddleware: UserMiddleware;
   private platforms: Array<PlatformMiddleware> = [];
-  private scripts: { [key: string]: { [key: string]: Array<ScriptFunction> } };
+  private scripts: { [key: string]: Script } = {};
+  private greetingScript: GreetingFunction;
 
   constructor(classifierFiles: Array<string|TopicCollection> = defaultClassifierDirectories) {
     const engine = new NLPEngine(classifierFiles);
-    // console.log(_.keys(this.classifiers));
     this.intents = [ engine ];
     this.reducer = defaultReducer.bind(this);
     this.setUserMiddlware(new MemoryStorage());
@@ -43,6 +50,7 @@ export default class ChatBot {
   }
 
   public _addScript(topic: string, action: string, script: ScriptFunction) {
+    console.log(this.scripts);
     if (_.has(this.scripts, [topic, action]) === false) {
       _.set(this.scripts, [topic, action], []);
     }
@@ -50,20 +58,18 @@ export default class ChatBot {
     return this;
   }
 
-  public addScript() {
-    if (arguments.length === 3) {
-      return this._addScript(arguments[0], arguments[1], arguments[3]);
-    }
-    if (arguments.length === 2) {
-      return this._addScript(arguments[0], '', arguments[1]);
-    }
-    if (arguments.length === 1) {
-      return this._addScript('', '', arguments[0]);
-    }
-    throw new Error('Bad argument count');
+  public newScript(name: string = DEFAULT_SCRIPT) {
+    const newScript = new Script(name);
+    this.scripts[name] = newScript
+    return newScript;
   }
 
-  public addGreeting(scriot: GreetingFunction) {
+  public getScript(name: string = DEFAULT_SCRIPT) {
+    return this.scripts[name];
+  }
+
+  public addGreeting(script: GreetingFunction) {
+    this.greetingScript = script;
     return this;
   }
 
@@ -87,10 +93,6 @@ export default class ChatBot {
     return this;
   }
 
-  public getUser() {
-    return this;
-  }
-
   public createEmptyIntent(): Intent {
     return {
       action: null,
@@ -105,11 +107,12 @@ export default class ChatBot {
     const anEmptyUser: User = {
       conversation: [],
       id: null,
-      intent: this.createEmptyIntent(),
       platform: null,
-      state: 'none',
+      state: null,
+      script: null,
+      _platform: null,
     };
-    return _.defaults(anEmptyUser, defaults) as User;
+    return _.defaults(defaults, anEmptyUser) as User;
   }
 
   public start() {
@@ -120,7 +123,16 @@ export default class ChatBot {
     this.platforms.forEach(platform => platform.stop());
   }
 
+  public processGreeting<U extends User>(user: U): void {
+    if (this.greetingScript) {
+      this.greetingScript(user, new OutgoingClass(user))
+    }
+    return;
+  }
+
   public processMessage<U extends User>(user: U, message: IncomingMessage): Promise<void> {
+    console.log(user);
+    console.log(message);
     if (typeof user.conversation === 'undefined') {
       user.conversation = [];
     }
@@ -131,17 +143,21 @@ export default class ChatBot {
       .then(intent => {
         const topic = intent.topic;
         const action = intent.action;
-        let validScripts: Array<ScriptFunction> = [];
-        if (_.has(this.scripts, [topic, action])) {
-          validScripts = validScripts.concat(this.scripts[topic][action]);
+        const request: Incoming = {
+          user: user,
+          message: message,
+          intent: intent,
+        };
+        console.log(request);
+        if (user.script && this.scripts[user.script]) {
+          this.scripts[user.script].run(request);
+        } else if (this.scripts[DEFAULT_SCRIPT]) {
+          this.scripts[DEFAULT_SCRIPT].run(request);
         }
-        if (_.has(this.scripts, [topic, ''])) {
-          validScripts = validScripts.concat(this.scripts[topic]['']);
-        }
-        if (_.has(this.scripts, ['', ''])) {
-          validScripts = validScripts.concat(this.scripts['']['']);
-        }
-        return this.callScript(user, message, validScripts);
+      })
+      .catch((err: Error) => {
+        console.error('error caught');
+        console.error(err);
       });
   }
 
@@ -149,15 +165,5 @@ export default class ChatBot {
     return Promise.map(this.intents, intent => intent.getIntents(message, user))
       .then(_.flatten)
       .then(_.compact);
-  }
-
-  private callScript(user: User, message: IncomingMessage, scripts: Array<ScriptFunction>): Promise<void> {
-    if (scripts.length > 0) {
-      return Promise.resolve();
-    }
-    const currentScript = _.head(scripts);
-    const nextScripts = _.tail(scripts);
-    const nextFunction = this.callScript.bind(this, user, message, nextScripts);
-    return Promise.resolve(currentScript(user, message, nextFunction));
   }
 }

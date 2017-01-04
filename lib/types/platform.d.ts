@@ -1,9 +1,7 @@
-import * as Bot from './bot';
-export declare class Middleware {
-    constructor(Botler: any);
+import { Message } from './message';
+import { User } from './user';
+export declare class PlatformMiddleware {
     start?: () => Promise<this>;
     stop?: () => Promise<this>;
-    send?: <U extends Bot.User>(user: U, message: Bot.Message) => Promise<this>;
-    getUser?: <U extends Bot.User>(user: U) => Promise<U>;
-    saveUser?: <U extends Bot.User>(user: U) => Promise<U>;
+    send?: <U extends User, M extends Message>(user: U, message: M) => Promise<this>;
 }

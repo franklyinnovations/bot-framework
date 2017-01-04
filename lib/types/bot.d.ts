@@ -1,3 +1,4 @@
+import { User } from './user';
 export interface Intent {
     action: string;
     topic: string;
@@ -5,51 +6,31 @@ export interface Intent {
         confidence: number;
     } | any;
 }
-export interface User {
-    id: string;
-    platform: string;
-    conversation: Array<string>;
-    state: any;
-    intent: Intent;
-}
-export interface Session {
-    user: User;
-    intent: Intent;
-    sendText: (text: string) => Promise<this>;
-    sendImage: (url: string) => Promise<this>;
-    createButtons: () => ButtonMessage;
-    createCarousel: () => CarouselMessage;
-    createQuickReplies: () => QuickReplies;
-}
-export interface _Message {
-    title(title: string): this;
-    text(text: string): this;
-    subtitle(sutitle: string): this;
-    postbackButton(text: string, postback: string): this;
-    urlButton(text: string, url: string): this;
-    image(url: string): this;
-}
-export interface Element extends _Message {
-}
-export interface Message extends _Message {
-    send: () => Promise<any>;
-}
-export declare class TextMessage {
-    text: string;
-    text(): this;
-    send(): Promise<this>;
-}
-export interface ButtonMessage extends Message {
-}
-export interface CarouselMessage extends Message {
-    createElement(): Element;
-    addElement(anElemnt: Element): this;
-}
-export interface QuickReplies extends Message {
-}
-export interface Button {
-    type: string;
-    title: string;
-    payload?: string;
+export interface IncomingMessage {
+    type: 'text' | 'image';
+    text?: string;
     url?: string;
+}
+export interface Incoming {
+    user: User;
+    message: IncomingMessage;
+    intent: Intent;
+}
+import * as Message from './message';
+export { Message };
+export interface Outgoing {
+    sendText: (text: string) => this;
+    createButtons: () => Message.ButtonMessage;
+}
+export declare type NextFunction = () => Promise<void>;
+export declare type ScriptFunction = (incoming: Incoming, response: Outgoing, next: NextFunction) => Promise<void>;
+export declare type GreetingFunction = (user: User, response: Outgoing) => Promise<void>;
+export declare class IntentGenerator {
+    getIntents: (message: IncomingMessage, user: User) => Promise<Array<Intent>>;
+}
+export interface SkillFunction {
+    (user: User): Promise<User>;
+}
+export interface ReducerFunction {
+    (intents: Array<Intent>, user?: User): Promise<Intent>;
 }

@@ -1,97 +1,57 @@
-import * as Platform from '../types/platform';
+import { PlatformMiddleware } from '../types/platform';
+import { Message } from '../types/bot';
 import * as Bot from '../types/bot';
+import { User } from '../types/user';
 import * as readline from 'readline';
 import Botler from '../index';
 
-export class Console implements Platform.Middleware {
+export default class Console implements PlatformMiddleware {
     private rl: readline.ReadLine;
     protected bot: Botler;
+    protected theUser:User;
     constructor(botler: Botler) {
         this.bot = botler;
     }
 
-    start() {
-        //usually start listening on a port here
+    public start() {
+        // usually start listening on a port here
+        // reset user
+        this.theUser = this.bot.createEmptyUser({
+            id: 0,
+            platform: 'console',
+            _platform: this,
+        });
         this.rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout
         });
+        this.bot.processGreeting(this.theUser);
 
         this.rl.on('line', (input: string) => {
-            const user: Bot.User = this.bot.createEmptyUser();
-            user.id = 'console';
-            user.platform = 'console';
-            this.bot.processText(user, input)
+            console.log(`user said "${input}"`);
+            const message:Bot.IncomingMessage = {
+                type: 'text',
+                text: input,
+            };
+            this.bot.processMessage(this.theUser, message)
         });
         return Promise.resolve(this);
     }
 
-    stop() {
+    public stop() {
         this.rl.close();
         //usually stop listening here
         return Promise.resolve(this);
     }
 
-    send(message: Bot.Message) {
-        if (message instanceof Bot.t)
+    public send<M extends Message.Message>(message: M) {
+        switch(message.type) {
+            case 'text':
+                const textMessage: Message.TextMessage = message as any;
+                const text = textMessage.text;
+                console.log(`-> ${text}`);
+                break;
+        }
         return Promise.resolve(this);
     }
-
-
-}
-
-class BaseSession implements Platform.Session {
-    protected user_id: string;
-    constructor(user_id: string) {
-        this.user_id = user_id;
-    }
-
-    set user(text: string) {
-        
-    }
-
-    get user() {
-        return 'hi';
-    }
-
-    get intent {
-
-    }
-
-    sendText(text: string) {
-        console.log('sending ')
-        return Promise.resolve(this);
-    }
-
-    sendImage(url: string) {
-        return Promise.resolve(this);
-    }
-
-    createButtons(url: string) {
-        return new ButtonMessage(this.user_id);
-    }
-
-    createCarousel() {
-
-    }
-}
-
-class Message implements Platform.Message {
-    protected user_id: string;
-    protected messageTitle: string;
-    protected messageSubTitle: string;
-    protected buttons: Array<MessengerButton>;
-    protected image_url: string;
-    protected elements: Array<MessengerItem>;
-
-    constructor(user_id: string) {
-        this.user_id = user_id;
-    }
-    send() {
-        throw new Error('base class');
-    }
-}
-
-class ButtonMessage extends Message implements Platform.ButtonMessage {
-    
 }

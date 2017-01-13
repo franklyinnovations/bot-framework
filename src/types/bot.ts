@@ -1,4 +1,6 @@
 import { User } from './user';
+import * as Promise from 'bluebird';
+import { IncomingMessage } from './message';
 
 export interface Intent {
   action: string;
@@ -8,11 +10,7 @@ export interface Intent {
   } | any;
 }
 
-export interface IncomingMessage {
-    type: 'text' | 'image';
-    text?: string;
-    url?: string;
-};
+export { IncomingMessage };
 
 export interface Incoming {
     user: User;
@@ -31,8 +29,8 @@ export interface Outgoing {
     // createQuickReplies: () => QuickReplies;
 }
 
-export type NextFunction = () => Promise<void>;
-export type ScriptFunction = (incoming: Incoming, response: Outgoing, next: NextFunction) => Promise<void>;
+export type StopFunction = () => void;
+export type DialogFunction = (incoming: Incoming, response: Outgoing, stop: StopFunction) => Promise<void>;
 export type GreetingFunction = (user: User, response: Outgoing) => Promise<void>;
 
 export declare class IntentGenerator {

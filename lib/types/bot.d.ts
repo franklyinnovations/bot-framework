@@ -1,4 +1,7 @@
+/// <reference types="bluebird" />
 import { User } from './user';
+import * as Promise from 'bluebird';
+import { IncomingMessage } from './message';
 export interface Intent {
     action: string;
     topic: string;
@@ -6,11 +9,7 @@ export interface Intent {
         confidence: number;
     } | any;
 }
-export interface IncomingMessage {
-    type: 'text' | 'image';
-    text?: string;
-    url?: string;
-}
+export { IncomingMessage };
 export interface Incoming {
     user: User;
     message: IncomingMessage;
@@ -22,8 +21,8 @@ export interface Outgoing {
     sendText: (text: string) => this;
     createButtons: () => Message.ButtonMessage;
 }
-export declare type NextFunction = () => Promise<void>;
-export declare type ScriptFunction = (incoming: Incoming, response: Outgoing, next: NextFunction) => Promise<void>;
+export declare type StopFunction = () => void;
+export declare type DialogFunction = (incoming: Incoming, response: Outgoing, stop: StopFunction) => Promise<void>;
 export declare type GreetingFunction = (user: User, response: Outgoing) => Promise<void>;
 export declare class IntentGenerator {
     getIntents: (message: IncomingMessage, user: User) => Promise<Array<Intent>>;

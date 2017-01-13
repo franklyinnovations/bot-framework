@@ -1,5 +1,7 @@
 import { Message } from './message';
 import { User } from './user';
+import * as Promise from 'bluebird';
+
 // Platform middlware
 export declare class PlatformMiddleware {
     public start?: () => Promise<this>;

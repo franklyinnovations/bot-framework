@@ -1,6 +1,7 @@
 import { Intent } from './types/bot';
 import * as util from 'util';
 import * as _ from 'lodash';
+import * as Promise from 'bluebird';
 
 export default function defaultReducer(intents: Array<Intent>): Promise<Intent> {
   return Promise.resolve(_.compact(intents))
@@ -20,7 +21,7 @@ export default function defaultReducer(intents: Array<Intent>): Promise<Intent> 
       const mergedDetails = _.defaults.apply(this, validIntents.map(intent => intent.details));
       const firstIntent = validIntents[0];
       firstIntent.details = mergedDetails;
-      if (this.debugOn) { console.log(firstIntent); };
+      if (this.debugOn) { console.log('fI', firstIntent); };
       return firstIntent;
     });
 }

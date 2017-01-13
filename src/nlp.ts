@@ -3,6 +3,7 @@ import { Intent } from './types/bot';
 import { IncomingMessage } from './types/bot';
 import { grabTopics, locatonExtractor, getLocationConfidence } from './helpers';
 import { IntentGenerator } from './types/bot';
+import * as Promise from 'bluebird';
 
 import * as _ from 'lodash';
 import * as util from 'util';

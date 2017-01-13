@@ -1,7 +1,9 @@
+/// <reference types="bluebird" />
 import { TopicCollection, Classifiers } from './classifier';
 import { Intent } from './types/bot';
 import { IncomingMessage } from './types/bot';
 import { IntentGenerator } from './types/bot';
+import * as Promise from 'bluebird';
 export declare const defaultClassifierDirectories: Array<string>;
 export default class NLPBase implements IntentGenerator {
     classifiers: Classifiers;

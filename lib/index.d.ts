@@ -2,17 +2,20 @@
 import * as Promise from 'bluebird';
 import { TopicCollection } from './classifier';
 import { PlatformMiddleware } from './types/platform';
-import { Intent, IncomingMessage, IntentGenerator, ReducerFunction, ScriptFunction, GreetingFunction } from './types/bot';
-import { UserMiddleware, User } from './types/user';
+import { Intent, IncomingMessage, IntentGenerator, ReducerFunction, GreetingFunction } from './types/bot';
+import { UserMiddleware, User, BasicUser } from './types/user';
 export { TopicCollection } from './classifier';
 export { Intent, PlatformMiddleware };
 import * as Platforms from './platforms';
 export { Platforms };
+import Script from './script';
+import { MessageTypes } from './types/message';
+export { MessageTypes };
 export declare const defaultClassifierDirectories: Array<string>;
 export default class Botler {
+    debugOn: Boolean;
     private intents;
     private reducer;
-    private debugOn;
     private userMiddleware;
     private platforms;
     private scripts;
@@ -20,20 +23,18 @@ export default class Botler {
     constructor(classifierFiles?: Array<string | TopicCollection>);
     addIntent(newIntent: IntentGenerator): this;
     unshiftIntent(newIntent: IntentGenerator): this;
-    _addScript(topic: string, action: string, script: ScriptFunction): this;
-    addScript(): this;
+    newScript(name?: string): Script;
+    getScript(name?: string): Script;
     addGreeting(script: GreetingFunction): this;
     setReducer(newReducer: ReducerFunction): this;
     setUserMiddlware(middleware: UserMiddleware): this;
     addPlatform(platform: PlatformMiddleware): this;
     turnOnDebug(): this;
-    getUser(): this;
     createEmptyIntent(): Intent;
     createEmptyUser(defaults?: any): User;
     start(): void;
     stop(): void;
     processGreeting<U extends User>(user: U): void;
-    processMessage<U extends User>(user: U, message: IncomingMessage): Promise<void>;
+    processMessage(basicUser: BasicUser, message: IncomingMessage): Promise<void>;
     private getIntents(user, message);
-    private callScript(request, scripts);
 }

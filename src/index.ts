@@ -1,10 +1,10 @@
 import * as _ from 'lodash';
 import * as Promise from 'bluebird';
 
-import { classifier, GenerateClassifier, TopicCollection, Classifiers, Classification, checkUsingClassifier, runThroughClassifiers } from './classifier';
+import { TopicCollection } from './classifier';
 import { PlatformMiddleware } from './types/platform';
-import { Intent, Incoming, Outgoing, IncomingMessage, IntentGenerator, ReducerFunction, ScriptFunction, GreetingFunction } from './types/bot';
-import { UserMiddleware, User } from './types/user';
+import { Intent, Incoming, IncomingMessage, IntentGenerator, ReducerFunction, GreetingFunction } from './types/bot';
+import { UserMiddleware, User, BasicUser } from './types/user';
 
 export { TopicCollection } from './classifier';
 export { Intent, PlatformMiddleware };
@@ -17,15 +17,19 @@ import defaultReducer from './default-reducer';
 import NLPEngine from './nlp';
 import Script from './script';
 import OutgoingClass from './outgoing';
+import { Greeting } from './types/messages/greeting';
+import { MessageTypes } from './types/message'
+export { MessageTypes };
 
 export const defaultClassifierDirectories: Array<string> = [`${__dirname}/../nlp/phrases`];
 
 const DEFAULT_SCRIPT = '';
 
 export default class Botler {
+  public debugOn: Boolean = false;
+
   private intents: Array<IntentGenerator> = [];
   private reducer: ReducerFunction;
-  private debugOn: Boolean = false;
   private userMiddleware: UserMiddleware;
   private platforms: Array<PlatformMiddleware> = [];
   private scripts: { [key: string]: Script } = {};
@@ -35,7 +39,7 @@ export default class Botler {
     const engine = new NLPEngine(classifierFiles);
     this.intents = [ engine ];
     this.reducer = defaultReducer.bind(this);
-    this.setUserMiddlware(new MemoryStorage());
+    this.setUserMiddlware(new MemoryStorage(this));
     return this;
   }
 
@@ -49,18 +53,9 @@ export default class Botler {
     return this;
   }
 
-  public _addScript(topic: string, action: string, script: ScriptFunction) {
-    console.log(this.scripts);
-    if (_.has(this.scripts, [topic, action]) === false) {
-      _.set(this.scripts, [topic, action], []);
-    }
-    this.scripts[topic][action].push(script);
-    return this;
-  }
-
   public newScript(name: string = DEFAULT_SCRIPT) {
-    const newScript = new Script(name);
-    this.scripts[name] = newScript
+    const newScript = new Script(this, name);
+    this.scripts[name] = newScript;
     return newScript;
   }
 
@@ -105,12 +100,13 @@ export default class Botler {
 
   public createEmptyUser(defaults: any = {}): User {
     const anEmptyUser: User = {
+      _platform: null,
       conversation: [],
       id: null,
       platform: null,
-      state: null,
       script: null,
-      _platform: null,
+      scriptStage: 0,
+      state: null,
     };
     return _.defaults(defaults, anEmptyUser) as User;
   }
@@ -124,41 +120,49 @@ export default class Botler {
   }
 
   public processGreeting<U extends User>(user: U): void {
+    const greetingMessage: Greeting = {
+      type: 'greeting',
+    };
+    user.conversation = user.conversation.concat(greetingMessage);
     if (this.greetingScript) {
-      this.greetingScript(user, new OutgoingClass(user))
+      this.greetingScript(user, new OutgoingClass(this, user));
     }
     return;
   }
 
-  public processMessage<U extends User>(user: U, message: IncomingMessage): Promise<void> {
-    console.log(user);
-    console.log(message);
-    if (typeof user.conversation === 'undefined') {
-      user.conversation = [];
-    }
-
-    user.conversation = user.conversation.concat(message);
-    return this.getIntents(user, message)
+  public processMessage(basicUser: BasicUser, message: IncomingMessage): Promise<void> {
+    let user: User = null;
+    return this.userMiddleware.getUser(basicUser)
+      .then(completeUser => {
+        completeUser.conversation = completeUser.conversation.concat(message);
+        user = completeUser;
+        return completeUser;
+      })
+      .then(completeUser =>  this.getIntents(completeUser, message))
       .then(intents => this.reducer(intents, user))
       .then(intent => {
-        const topic = intent.topic;
-        const action = intent.action;
         const request: Incoming = {
-          user: user,
-          message: message,
           intent: intent,
+          message: message,
+          user: user,
         };
-        console.log(request);
+        const blankScript = function() { return Promise.resolve(); };
+        let nextScript = blankScript;
+        if (this.scripts[DEFAULT_SCRIPT]) {
+          nextScript = function() { return this.scripts[DEFAULT_SCRIPT].run(request, blankScript); }.bind(this);
+        }
         if (user.script && this.scripts[user.script]) {
-          this.scripts[user.script].run(request);
+          this.scripts[user.script].run(request, nextScript);
         } else if (this.scripts[DEFAULT_SCRIPT]) {
-          this.scripts[DEFAULT_SCRIPT].run(request);
+          return this.scripts[DEFAULT_SCRIPT].run(request, blankScript);
         }
       })
       .catch((err: Error) => {
         console.error('error caught');
         console.error(err);
-      });
+      })
+      .then(() => this.userMiddleware.saveUser(user))
+      .then(() => { return; });
   }
 
   private getIntents(user: User, message: IncomingMessage): Promise<Array<Intent>> {

@@ -1,2 +1,4 @@
 import Console from './shell';
-export { Console };
+import Facebook from './facebook';
+import Web from './web';
+export { Console, Facebook, Web };

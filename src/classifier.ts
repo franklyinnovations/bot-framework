@@ -133,7 +133,7 @@ export function GenerateClassifier(topicsToLoad: Array<filename | TopicCollectio
 
 function readInTopic(topic: string, directory: string): TopicCollection {
   // console.log('dir', directory);
-  const actions = [];
+  const actions: Array<any> = [];
   fs.readdirSync(directory)
     .filter(file => !_.startsWith(file, '.'))
     .forEach(file => {

@@ -23,8 +23,13 @@
   "license": "MIT",
   "dependencies": {
     "@types/bluebird": "^3.0.35",
+    "@types/body-parser": "0.0.33",
+    "@types/express": "^4.0.34",
     "bluebird": "^3.4.1",
+    "body-parser": "^1.15.2",
+    "express": "^4.14.0",
     "facebook-send-api": "^2.6.0",
+    "facebook-sendapi-types": "github:fyndme/facebook-sendapi-types",
     "lodash": "^4.11.0",
     "natural": "^0.4.0"
   },
@@ -34,7 +39,7 @@
     "@types/node": "^6.0.45",
     "chai": "^3.5.0",
     "mocha": "^2.5.3",
-    "typescript": "^2.0.6"
+    "typescript": "^2.1"
   },
   "preferGlobal": true
 }

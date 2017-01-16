@@ -1,6 +1,6 @@
 /// <reference types="bluebird" />
 import Facebook from './facebook';
-import Botler from '../index';
+import Botler from '../bot';
 import * as Promise from 'bluebird';
 export default class Web extends Facebook {
     private localApp;

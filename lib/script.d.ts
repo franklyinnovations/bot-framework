@@ -1,14 +1,23 @@
 /// <reference types="bluebird" />
-import { Incoming, DialogFunction } from './types/bot';
+import { Incoming, DialogFunction, Outgoing } from './types/bot';
 import { MessageType } from './types/message';
 import * as Promise from 'bluebird';
-import Botler from './index';
+import Botler from './bot';
+export declare enum EndScriptReasons {
+    Called = 0,
+    Reached = 1,
+}
+export declare class EndScriptException extends Error {
+    reason: EndScriptReasons;
+    constructor(reason: EndScriptReasons);
+}
 export default class Script {
     private dialogs;
     private name;
     private bot;
+    private _begin;
     constructor(bot: Botler, scriptName: string);
-    run(incoming: Incoming, nextScript: () => Promise<void>, scriptData?: any): Promise<void>;
+    run(incoming: Incoming, outgoing: Outgoing, nextScript: () => Promise<void>): Promise<void>;
     addDialog(dialogFunction: DialogFunction): this;
     addDialog(name: string, dialogFunction: DialogFunction): this;
     expect(dialogFunction: DialogFunction): this;
@@ -18,6 +27,8 @@ export default class Script {
     match(topic: string, dialogFunction: DialogFunction): this;
     match(topic: string, action: string, dialogFunction: DialogFunction): this;
     readonly force: this;
+    begin(dialogFunction: DialogFunction): this;
     private filterDialog(topic, action);
     private callScript(request, response, dialogs, nextScript, thisStep);
 }
+export declare function stopFunction(): void;

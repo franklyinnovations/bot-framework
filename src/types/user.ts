@@ -1,13 +1,14 @@
 import * as Bot from './bot';
 import { PlatformMiddleware } from './platform';
 import * as Promise from 'bluebird';
-import Botler from '../index';
+import Botler from '../bot';
 
 export interface User extends BasicUser {
   conversation: Array<Bot.IncomingMessage>;
   state: any;
   script: string;
   scriptStage: number;
+  scriptArguments: any;
 }
 
 export interface BasicUser {

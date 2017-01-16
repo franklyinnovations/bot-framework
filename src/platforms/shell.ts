@@ -4,7 +4,7 @@ import * as Bot from '../types/bot';
 import { User } from '../types/user';
 import * as readline from 'readline';
 import * as Promise from 'bluebird';
-import Botler from '../index';
+import Botler from '../bot';
 
 export default class Console implements PlatformMiddleware {
   private rl: readline.ReadLine;

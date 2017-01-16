@@ -1,5 +1,5 @@
 import Facebook from './facebook';
-import Botler from '../index';
+import Botler from '../bot';
 import * as Express from 'express';
 import * as bodyParser from 'body-parser';
 import * as http from "http";

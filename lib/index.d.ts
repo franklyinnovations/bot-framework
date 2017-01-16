@@ -1,40 +1,8 @@
-/// <reference types="bluebird" />
-import * as Promise from 'bluebird';
-import { TopicCollection } from './classifier';
-import { PlatformMiddleware } from './types/platform';
-import { Intent, IncomingMessage, IntentGenerator, ReducerFunction, GreetingFunction } from './types/bot';
-import { UserMiddleware, User, BasicUser } from './types/user';
-export { TopicCollection } from './classifier';
-export { Intent, PlatformMiddleware };
+export { Intent, Incoming, GreetingFunction } from './types/bot';
+export { User } from './types/user';
+export { PlatformMiddleware } from './types/platform';
+export { MessageTypes } from './types/message';
 import * as Platforms from './platforms';
 export { Platforms };
-import Script from './script';
-import { MessageTypes } from './types/message';
-export { MessageTypes };
-export declare const defaultClassifierDirectories: Array<string>;
-export default class Botler {
-    debugOn: Boolean;
-    private intents;
-    private reducer;
-    private userMiddleware;
-    private platforms;
-    private scripts;
-    private greetingScript;
-    constructor(classifierFiles?: Array<string | TopicCollection>);
-    addIntent(newIntent: IntentGenerator): this;
-    unshiftIntent(newIntent: IntentGenerator): this;
-    newScript(name?: string): Script;
-    getScript(name?: string): Script;
-    addGreeting(script: GreetingFunction): this;
-    setReducer(newReducer: ReducerFunction): this;
-    setUserMiddlware(middleware: UserMiddleware): this;
-    addPlatform(platform: PlatformMiddleware): this;
-    turnOnDebug(): this;
-    createEmptyIntent(): Intent;
-    createEmptyUser(defaults?: any): User;
-    start(): void;
-    stop(): void;
-    processGreeting<U extends User>(user: U): void;
-    processMessage(basicUser: BasicUser, message: IncomingMessage): Promise<void>;
-    private getIntents(user, message);
-}
+import Botler from './bot';
+export default Botler;

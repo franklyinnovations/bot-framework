@@ -1,7 +1,7 @@
 import { UserMiddleware, User, BasicUser } from '../types/user';
 import * as Promise from 'bluebird';
 import * as _ from 'lodash';
-import Botler from '../index';
+import Botler from '../bot';
 
 export default class Memory implements UserMiddleware {
   private users: { [platform: string]: { [id: string]: User } } = {};

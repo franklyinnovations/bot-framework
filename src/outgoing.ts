@@ -3,8 +3,9 @@ import { User } from './types/user';
 import * as Message from './types/message';
 import { PlatformMiddleware } from './types/platform';
 import * as Promise from 'bluebird';
-import Botler from './index';
+import Botler from './bot';
 import * as _ from 'lodash';
+import { stopFunction, EndScriptException, EndScriptReasons } from './script';
 
 export default class Outgoing implements OutgoingInterface {
   protected promise: Promise<PlatformMiddleware> = Promise.resolve(null);
@@ -17,9 +18,11 @@ export default class Outgoing implements OutgoingInterface {
   }
 
   public startScript(name: string = '', scriptArguments: any = {}) {
-    this.user.script = name;
-    this.user.scriptStage = 0;
-    this.bot.processMessage(this.user, _.last(this.user.conversation));
+    this.bot.startScript(this.user, name, scriptArguments);
+  }
+
+  public endScript() {
+    throw new EndScriptException(EndScriptReasons.Called);
   }
 
   public startTyping() {

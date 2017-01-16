@@ -1,7 +1,7 @@
 import { PlatformMiddleware } from '../types/platform';
 import { Message } from '../types/bot';
 import * as Bot from '../types/bot';
-import Botler from '../index';
+import Botler from '../bot';
 import { User } from '../types/user';
 import * as Promise from 'bluebird';
 import * as Express from 'express';

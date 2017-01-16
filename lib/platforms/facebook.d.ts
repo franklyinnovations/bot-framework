@@ -1,7 +1,7 @@
 /// <reference types="bluebird" />
 import { PlatformMiddleware } from '../types/platform';
 import { Message } from '../types/bot';
-import Botler from '../index';
+import Botler from '../bot';
 import { User } from '../types/user';
 import * as Promise from 'bluebird';
 export default class Facbook implements PlatformMiddleware {

@@ -3,7 +3,7 @@ import { PlatformMiddleware } from '../types/platform';
 import { Message } from '../types/bot';
 import { User } from '../types/user';
 import * as Promise from 'bluebird';
-import Botler from '../index';
+import Botler from '../bot';
 export default class Console implements PlatformMiddleware {
     private rl;
     protected theUser: User;

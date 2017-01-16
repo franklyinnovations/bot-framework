@@ -1,9 +1,8 @@
 import * as _ from 'lodash';
-import { Incoming, DialogFunction } from './types/bot';
+import { Incoming, DialogFunction, Outgoing } from './types/bot';
 import { MessageType, Text as TextMessage } from './types/message'
-import OutgoingClass from './outgoing';
 import * as Promise from 'bluebird';
-import Botler from './index';
+import Botler from './bot';
 
 interface DialogShell {
   intent: {
@@ -27,10 +26,26 @@ class StopException extends Error {
   }
 }
 
+export enum EndScriptReasons {
+  Called,
+  Reached,
+}
+
+export class EndScriptException extends Error {
+  public reason: EndScriptReasons;
+  constructor(reason: EndScriptReasons) {
+    super(`End of script due to ${EndScriptReasons[reason]}`);
+    // Set the prototype explicitly.
+    (<any>Object).setPrototypeOf(this, EndScriptException.prototype);
+    this.reason = reason
+  }
+}
+
 export default class Script {
   private dialogs: Array<DialogShell> = [];
   private name: string;
   private bot: Botler;
+  private _begin: DialogFunction = null;
 
   constructor(bot: Botler, scriptName: string) {
     this.bot = bot;
@@ -38,20 +53,19 @@ export default class Script {
     return this;
   }
 
-  public run(incoming: Incoming, nextScript: () => Promise<void>, scriptData: any = null) {
+  public run(incoming: Incoming, outgoing: Outgoing, nextScript: () => Promise<void>) {
     const topic = incoming.intent.topic;
     const action = incoming.intent.action;
-
-    const top = _.slice(this.dialogs, 0, incoming.user.scriptStage);
-    const bottom = _.slice(this.dialogs, incoming.user.scriptStage);
+    
+    const top = _.slice(this.dialogs, 0, Math.max(0, incoming.user.scriptStage));
+    const bottom = _.slice(this.dialogs, Math.max(0, incoming.user.scriptStage));
 
     let validDialogs: Array<DialogShell> = bottom;
     let forcedDialogs: Array<DialogShell> = top.filter((shell) => shell.force).filter(this.filterDialog(topic, action));
 
-    const response = new OutgoingClass(this.bot, incoming.user);
     const runUnforced = () => {
       return Promise.resolve()
-        .then(() => this.callScript(incoming, response, validDialogs, nextScript, incoming.user.scriptStage))
+        .then(() => this.callScript(incoming, outgoing, validDialogs, nextScript, incoming.user.scriptStage))
         .catch((err: Error) => {
           if (err instanceof StopException) {
             return;
@@ -60,7 +74,15 @@ export default class Script {
         });
     };
     return Promise.resolve()
-      .then(() => this.callScript(incoming, response, forcedDialogs, runUnforced, 0))
+      .then(() => {
+        if (incoming.user.scriptStage === -1) {
+          incoming.user.scriptStage = 0;
+          if (this._begin !== null) {
+            return this._begin(incoming, outgoing, stopFunction);
+          }
+        }
+      })
+      .then(() => this.callScript(incoming, outgoing, forcedDialogs, runUnforced, 0))
       .catch((err: Error) => {
         if (err instanceof StopException) {
           return;
@@ -177,6 +199,11 @@ export default class Script {
     return this;
   }
 
+  public begin(dialogFunction: DialogFunction): this {
+    this._begin = dialogFunction;
+    return this;
+  }
+
   private filterDialog(topic: string, action: string) {
     return (shell: DialogShell) => {
       if (shell.intent === null) {
@@ -192,7 +219,7 @@ export default class Script {
     };
   }
 
-  private callScript(request: Incoming, response: OutgoingClass, dialogs: Array<DialogShell>, nextScript: () => Promise<void>, thisStep: number): Promise<void> {
+  private callScript(request: Incoming, response: Outgoing, dialogs: Array<DialogShell>, nextScript: () => Promise<void>, thisStep: number): Promise<void> {
     if (dialogs.length === 0) {
       return nextScript();
     }
@@ -211,6 +238,9 @@ export default class Script {
     return Promise.resolve()
       .then(() => currentScript(request, response, stopFunction))
       .then(() => {
+        if (nextDialogs.length === 0) {
+          throw new EndScriptException(EndScriptReasons.Reached);
+        }
         // console.log('thisStep', thisStep, Math.max(request.user.scriptStage, thisStep + 1));
         request.user.scriptStage = Math.max(request.user.scriptStage, thisStep + 1);
         if (_.head(nextDialogs).expect === null) {
@@ -218,7 +248,7 @@ export default class Script {
         }
       })
       .catch((err: Error) => {
-        if (currentDialog.expect !== null && currentDialog.expect.catch !== null) {
+        if (err instanceof StopException && currentDialog.expect !== null && currentDialog.expect.catch !== null) {
           return Promise.resolve()
             .then(() => currentDialog.expect.catch(request, response, stopFunction))
             .then(() => stopFunction());
@@ -228,6 +258,6 @@ export default class Script {
   }
 }
 
-function stopFunction() {
+export function stopFunction() {
   throw new StopException();
 }

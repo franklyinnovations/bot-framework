@@ -5,7 +5,7 @@ import { PlatformMiddleware } from './types/platform';
 import * as Promise from 'bluebird';
 import Botler from './bot';
 import * as _ from 'lodash';
-import { stopFunction, EndScriptException, EndScriptReasons } from './script';
+import { stopFunction, EndScriptException, EndScriptReasons, StopScriptReasons } from './script';
 
 export default class Outgoing implements OutgoingInterface {
   protected promise: Promise<PlatformMiddleware> = Promise.resolve(null);
@@ -18,7 +18,10 @@ export default class Outgoing implements OutgoingInterface {
   }
 
   public startScript(name: string = '', scriptArguments: any = {}) {
-    this.bot.startScript(this.user, name, scriptArguments);
+    this.user.script = name;
+    this.user.scriptStage = -1;
+    this.user.scriptArguments = scriptArguments;
+    stopFunction(StopScriptReasons.NewScript);
   }
 
   public endScript() {

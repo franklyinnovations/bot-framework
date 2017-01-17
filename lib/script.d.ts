@@ -3,6 +3,15 @@ import { Incoming, DialogFunction, Outgoing } from './types/bot';
 import { MessageType } from './types/message';
 import * as Promise from 'bluebird';
 import Botler from './bot';
+export declare enum StopScriptReasons {
+    Called = 0,
+    NewScript = 1,
+    ExpectCaught = 2,
+}
+export declare class StopException extends Error {
+    reason: StopScriptReasons;
+    constructor(reason: StopScriptReasons);
+}
 export declare enum EndScriptReasons {
     Called = 0,
     Reached = 1,
@@ -31,4 +40,4 @@ export default class Script {
     private filterDialog(topic, action);
     private callScript(request, response, dialogs, nextScript, thisStep);
 }
-export declare function stopFunction(): void;
+export declare function stopFunction(reason?: StopScriptReasons): void;

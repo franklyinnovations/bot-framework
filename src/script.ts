@@ -18,11 +18,19 @@ interface DialogShell {
   name: string;
 };
 
-class StopException extends Error {
-  constructor(m: string = 'Stop') {
-    super(m);
+export enum StopScriptReasons {
+  Called,
+  NewScript,
+  ExpectCaught,
+}
+
+export class StopException extends Error {
+  public reason: StopScriptReasons;
+  constructor(reason: StopScriptReasons) {
+    super(`Script stopped due to ${StopScriptReasons[reason]}`);
     // Set the prototype explicitly.
     (<any>Object).setPrototypeOf(this, StopException.prototype);
+    this.reason = reason;
   }
 }
 
@@ -65,13 +73,7 @@ export default class Script {
 
     const runUnforced = () => {
       return Promise.resolve()
-        .then(() => this.callScript(incoming, outgoing, validDialogs, nextScript, incoming.user.scriptStage))
-        .catch((err: Error) => {
-          if (err instanceof StopException) {
-            return;
-          }
-          throw err;
-        });
+        .then(() => this.callScript(incoming, outgoing, validDialogs, nextScript, incoming.user.scriptStage));
     };
     return Promise.resolve()
       .then(() => {
@@ -82,13 +84,7 @@ export default class Script {
           }
         }
       })
-      .then(() => this.callScript(incoming, outgoing, forcedDialogs, runUnforced, 0))
-      .catch((err: Error) => {
-        if (err instanceof StopException) {
-          return;
-        }
-        throw err;
-      });;
+      .then(() => this.callScript(incoming, outgoing, forcedDialogs, runUnforced, 0));
   }
 
   public addDialog(dialogFunction: DialogFunction): this;
@@ -251,13 +247,13 @@ export default class Script {
         if (err instanceof StopException && currentDialog.expect !== null && currentDialog.expect.catch !== null) {
           return Promise.resolve()
             .then(() => currentDialog.expect.catch(request, response, stopFunction))
-            .then(() => stopFunction());
+            .then(() => stopFunction(StopScriptReasons.ExpectCaught));
         }
         throw err;
       });
   }
 }
 
-export function stopFunction() {
-  throw new StopException();
+export function stopFunction(reason: StopScriptReasons = StopScriptReasons.Called) {
+  throw new StopException(reason);
 }

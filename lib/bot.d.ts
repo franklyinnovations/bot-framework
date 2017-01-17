@@ -31,9 +31,8 @@ export default class Botler {
     createEmptyUser(defaults?: any): User;
     start(): void;
     stop(): void;
-    processGreeting<U extends User>(user: U): void;
+    processGreeting(user: BasicUser): Promise<void>;
     processMessage(basicUser: BasicUser, message: IncomingMessage): Promise<void>;
-    startScript(user: User, name: string, scriptArguments?: any): Promise<void>;
     private getIntents(user, message);
     private _process(user, request, response);
 }

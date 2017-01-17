@@ -12,7 +12,7 @@ export { Intent, PlatformMiddleware };
 import MemoryStorage from './storage/memory';
 import defaultReducer from './default-reducer';
 import NLPEngine from './nlp';
-import Script, { EndScriptException, stopFunction } from './script';
+import Script, { EndScriptException, stopFunction, StopException, StopScriptReasons} from './script';
 import OutgoingClass from './outgoing';
 import { Greeting } from './types/messages/greeting';
 
@@ -116,15 +116,11 @@ export default class Botler {
     this.platforms.forEach(platform => platform.stop());
   }
 
-  public processGreeting<U extends User>(user: U): void {
+  public processGreeting(user: BasicUser): Promise<void> {
     const greetingMessage: Greeting = {
       type: 'greeting',
     };
-    user.conversation = user.conversation.concat(greetingMessage);
-    if (this.greetingScript) {
-      this.greetingScript(user, new OutgoingClass(this, user));
-    }
-    return;
+    return this.processMessage(user, greetingMessage);
   }
 
   public processMessage(basicUser: BasicUser, message: IncomingMessage): Promise<void> {
@@ -152,13 +148,6 @@ export default class Botler {
       .then(() => { return; });
   }
 
-  public startScript(user: User, name: string, scriptArguments: any = {}) {
-    user.script = name;
-    user.scriptStage = -1;
-    user.scriptArguments = scriptArguments;
-    return this.processMessage(user, _.last(user.conversation));
-  }
-
   private getIntents(user: User, message: IncomingMessage): Promise<Array<Intent>> {
     return Promise.map(this.intents, intent => intent.getIntents(message, user))
       .then(_.flatten)
@@ -176,7 +165,12 @@ export default class Botler {
             return this.scripts[DEFAULT_SCRIPT].run(request, blankScript); 
           }.bind(this);
         }
-        if (user.script != null && this.scripts[user.script]) {
+        if (request.message.type === 'greeting' && user.script === null) {
+          if (this.greetingScript != null) {
+            return this.greetingScript(user, response);
+          }
+          return Promise.resolve();
+        } else if (user.script != null && this.scripts[user.script]) {
           return this.scripts[user.script].run(request, response, nextScript);
         } else if (this.scripts[DEFAULT_SCRIPT]) {
           return this.scripts[DEFAULT_SCRIPT].run(request, response, blankScript);
@@ -193,6 +187,11 @@ export default class Botler {
           user.scriptStage = -1;
           user.scriptArguments = {};
           return this._process(user, request, response);
+        } else if (err instanceof StopException) {
+          if (err.reason === StopScriptReasons.NewScript) {
+            return this._process(user, request, response);
+          }
+          return;
         } else {
           console.error('error caught');
           console.error(err);

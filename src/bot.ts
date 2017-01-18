@@ -79,6 +79,11 @@ export default class Botler {
     return this;
   }
 
+  public addErrorHandler(dialog: DialogFunction) {
+    this.onErrorScript = dialog;
+    return this;
+  }
+
   public turnOnDebug() {
     this.debugOn = true;
     return this;

@@ -6,7 +6,7 @@ import { PlatformMiddleware } from './types/platform';
 import * as Promise from 'bluebird';
 import Botler from './bot';
 export default class Outgoing implements OutgoingInterface {
-    protected promise: Promise<PlatformMiddleware>;
+    promise: Promise<PlatformMiddleware>;
     protected user: User;
     protected bot: Botler;
     constructor(bot: Botler, user: User);

@@ -1,4 +1,5 @@
 import Console from './shell';
 import Facebook from './facebook';
 import Web from './web';
-export { Console, Facebook, Web };
+import TestPlatform from './test';
+export { Console, Facebook, Web, TestPlatform };

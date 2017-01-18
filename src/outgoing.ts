@@ -8,12 +8,13 @@ import * as _ from 'lodash';
 import { stopFunction, EndScriptException, EndScriptReasons, StopScriptReasons } from './script';
 
 export default class Outgoing implements OutgoingInterface {
-  protected promise: Promise<PlatformMiddleware> = Promise.resolve(null);
+  public promise: Promise<PlatformMiddleware> = Promise.resolve(null);
   protected user: User;
   protected bot: Botler;
   constructor(bot: Botler, user: User) {
     this.bot = bot;
     this.user = user;
+    this.promise
     return this;
   }
 
@@ -41,7 +42,9 @@ export default class Outgoing implements OutgoingInterface {
       type: 'text',
       text: text,
     };
-    this.promise = this.promise.then(() => this.user._platform.send(this.user, textMessage));
+    this.promise = this.promise.then(() => this.user._platform.send(this.user, textMessage)).catch((err: Error) => {
+      console.log('err in ourgoing');
+    })
     return this;
   }
 

@@ -2,7 +2,7 @@
 import * as Promise from 'bluebird';
 import { TopicCollection } from './classifier';
 import { PlatformMiddleware } from './types/platform';
-import { Intent, IncomingMessage, IntentGenerator, ReducerFunction, GreetingFunction } from './types/bot';
+import { Intent, IncomingMessage, IntentGenerator, ReducerFunction, GreetingFunction, DialogFunction } from './types/bot';
 import { UserMiddleware, User, BasicUser } from './types/user';
 export { TopicCollection } from './classifier';
 export { Intent, PlatformMiddleware };
@@ -26,6 +26,7 @@ export default class Botler {
     setReducer(newReducer: ReducerFunction): this;
     setUserMiddlware(middleware: UserMiddleware): this;
     addPlatform(platform: PlatformMiddleware): this;
+    addErrorHandler(dialog: DialogFunction): this;
     turnOnDebug(): this;
     createEmptyIntent(): Intent;
     createEmptyUser(defaults?: any): User;

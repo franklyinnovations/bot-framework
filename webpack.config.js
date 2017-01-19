@@ -31,14 +31,15 @@ module.exports = {
     // assume a corresponding global variable exists and use that instead.
     // This is important because it allows us to avoid bundling all of our
     // dependencies, which allows browsers to cache those libraries between builds.
-    externals: {
-        "react": "React",
-        "react-dom": "ReactDOM"
-    },
+    // externals: {
+    //     "react": "React",
+    //     "react-dom": "ReactDOM"
+    // },
 
     plugins: [
         new CopyWebpackPlugin([
           { from: './src/platforms/web/www/index.html', to: __dirname + "/lib/platforms/web" },
+          { from: './node_modules/react-fbmessenger/dist/out.scss', to: __dirname + "/lib/platforms/web/messenger.css" },
         ]),
     ],
 };

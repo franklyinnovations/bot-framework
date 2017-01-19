@@ -1,17 +1,19 @@
-import { PlatformMiddleware } from '../types/platform';
-import { Message } from '../types/bot';
-import * as Bot from '../types/bot';
-import Botler from '../bot';
-import { User } from '../types/user';
 import * as Promise from 'bluebird';
-import * as Express from 'express';
 import * as bodyParser from 'body-parser';
-import * as http from "http";
+import * as Express from 'express';
 import FacebookAPI from 'facebook-send-api';
 import * as FacebookTypes from 'facebook-sendapi-types';
-import * as Messages from '../types/message';
+import * as http from "http";
 import * as _ from 'lodash';
-import { BasicUser } from '../types/user';
+
+import { Message } from '../types/bot';
+import * as Bot from '../types/bot';
+import * as Messages from '../types/message';
+import { PlatformMiddleware } from '../types/platform';
+import { BasicUser, User } from '../types/user';
+
+import Botler from '../bot';
+
 
 interface WebhookCallback {
   object: 'page';
@@ -29,12 +31,14 @@ export default class Facbook implements PlatformMiddleware {
   private expressApp: Express.Express;
   private server: http.Server = null;
   private verifyToken: string;
+  private FBSendAPI: FacebookAPI;
 
   constructor(botler: Botler, port: number = 3000, route: string = '/webhook', verifyToken: string = 'botler') {
     this.bot = botler;
     this.port = port;
     this.route = route;
     this.verifyToken = verifyToken;
+    this.FBSendAPI = new FacebookAPI(verifyToken);
     this.expressApp = Express();
     this.expressApp.use(bodyParser.json());
     this.expressApp.get(this.route, (req, res, next) => {
@@ -72,18 +76,10 @@ export default class Facbook implements PlatformMiddleware {
     return Promise.resolve(this);
   }
 
-  public send<U extends User, M extends Message.Message>(user: U, message: M) {
-    switch (message.type) {
-      case 'text':
-        const textMessage: Message.TextMessage = message as any;
-        const text = textMessage.text;
-        console.log(`-> ${text}`);
-        break;
-
-      default:
-        break;
-    }
-    return Promise.resolve(this);
+  public send<U extends User, M extends Message.Message>(user: U, message: M): Promise<this> {
+    const facebookMessage = mapInternalToFB(message);
+    return this.FBSendAPI.sendMessageToFB(user.id, facebookMessage)
+      .then(() => this);
   }
 
   private processMessage(event: FacebookTypes.WebhookPayload) {
@@ -137,3 +133,14 @@ export default class Facbook implements PlatformMiddleware {
     this.bot.processMessage(user, message);
   }
 }
+
+export function mapInternalToFB<M extends Messages.Message>(message: M): FacebookTypes.MessengerMessage {
+  switch (message.type) {
+    case 'text':
+      return FacebookAPI.exportTextMessage((<Messages.TextMessage>(message as any)).text);
+
+    default:
+      return null;
+  }
+}
+

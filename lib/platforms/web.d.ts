@@ -1,12 +1,17 @@
 /// <reference types="bluebird" />
-import Facebook from './facebook';
-import Botler from '../bot';
 import * as Promise from 'bluebird';
-export default class Web extends Facebook {
+import Botler from '../bot';
+import { Message } from '../types/message';
+import { PlatformMiddleware } from '../types/platform';
+import { User } from '../types/user';
+export default class Web implements PlatformMiddleware {
+    private bot;
     private localApp;
     private localServer;
     private localPort;
     constructor(botler: Botler, port?: number, fbport?: number);
     start(): Promise<this>;
     stop(): Promise<this>;
+    send<U extends User, M extends Message>(user: U, message: M): Promise<this>;
+    private getUserConversation(userId);
 }

@@ -9,5 +9,5 @@ export { Platforms };
 import Botler from './bot';
 export default Botler;
 
-import Tester from './test'; 
+import Tester from './test';
 export { Tester };

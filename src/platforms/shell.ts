@@ -1,14 +1,14 @@
 import { PlatformMiddleware } from '../types/platform';
 import { Message } from '../types/bot';
 import * as Bot from '../types/bot';
-import { User } from '../types/user';
+import { User, BasicUser } from '../types/user';
 import * as readline from 'readline';
 import * as Promise from 'bluebird';
 import Botler from '../bot';
 
 export default class Console implements PlatformMiddleware {
   private rl: readline.ReadLine;
-  protected theUser: User;
+  protected theUser: BasicUser;
   protected bot: Botler;
 
   constructor(bot: Botler) {
@@ -18,11 +18,11 @@ export default class Console implements PlatformMiddleware {
   public start() {
     // usually start listening on a port here
     // reset user
-    this.theUser = this.bot.createEmptyUser({
-      id: 0,
+    this.theUser = {
+      id: `0`,
       platform: 'console',
       _platform: this,
-    });
+    };
     this.rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -35,7 +35,7 @@ export default class Console implements PlatformMiddleware {
         type: 'text',
         text: input,
       };
-      this.bot.processMessage(this.theUser, message)
+      this.bot.processMessage(this.theUser, message);
     });
     return Promise.resolve(this);
   }

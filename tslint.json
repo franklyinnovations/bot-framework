@@ -2,6 +2,27 @@
   "extends": "tslint:recommended",
   "rules": {
     "object-literal-sort-keys": false,
-    "member-ordering": [false]
+    "member-ordering": [false],
+    "ordered-imports": [
+      false
+    ],
+    "object-literal-shorthand": false,
+    "quotemark": [
+      false
+    ],
+    "no-console": [
+      false
+    ],
+    "prefer-for-of": false,
+    "array-type": [
+      false
+    ],
+    "arrow-parens": false,
+    "max-line-length": [
+      false
+    ],
+    "only-arrow-functions": [
+      false
+    ]
   }
 }

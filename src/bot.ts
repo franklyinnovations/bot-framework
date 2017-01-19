@@ -14,7 +14,7 @@ import defaultReducer from './default-reducer';
 import NLPEngine from './nlp';
 import Script, { EndScriptException, stopFunction, StopException, StopScriptReasons} from './script';
 import OutgoingClass from './outgoing';
-import { Greeting } from './types/messages/greeting';
+import { GreetingMessage } from './types/messages/greeting';
 
 export const defaultClassifierDirectories: Array<string> = [`${__dirname}/../nlp/phrases`];
 
@@ -25,7 +25,7 @@ export default class Botler {
 
   private intents: Array<IntentGenerator> = [];
   private reducer: ReducerFunction;
-  private userMiddleware: UserMiddleware;
+  public userMiddleware: UserMiddleware;
   private platforms: Array<PlatformMiddleware> = [];
   private scripts: { [key: string]: Script } = {};
   private greetingScript: GreetingFunction;
@@ -122,7 +122,7 @@ export default class Botler {
   }
 
   public processGreeting(user: BasicUser): Promise<void> {
-    const greetingMessage: Greeting = {
+    const greetingMessage: GreetingMessage = {
       type: 'greeting',
     };
     return this.processMessage(user, greetingMessage);

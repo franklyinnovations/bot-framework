@@ -1,5 +1,5 @@
-import { Message } from '../message';
+import { Message, Postback } from '../message';
 export interface PostbackMessage extends Message {
-    type: 'postback';
+    type: Postback;
     payload: string;
 }

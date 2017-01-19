@@ -14,7 +14,6 @@ export default class Outgoing implements OutgoingInterface {
   constructor(bot: Botler, user: User) {
     this.bot = bot;
     this.user = user;
-    this.promise
     return this;
   }
 

@@ -3,11 +3,11 @@ import * as Promise from 'bluebird';
 import * as Responses from './responses';
 import * as util from 'util';
 import { PlatformMiddleware } from './types/platform';
-import { IncomingMessage, Message, TextMessage, Greeting } from './types/message';
+import { IncomingMessage, Message, TextMessage, GreetingMessage } from './types/message';
 import { User } from './types/user';
 import { TestPlatform } from './platforms/';
 
-const greetingMessage: Greeting = {
+const greetingMessage: GreetingMessage = {
   type: 'greeting',
 }
 

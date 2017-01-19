@@ -12,7 +12,7 @@ export default class Botler {
     debugOn: Boolean;
     private intents;
     private reducer;
-    private userMiddleware;
+    userMiddleware: UserMiddleware;
     private platforms;
     private scripts;
     private greetingScript;

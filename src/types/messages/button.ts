@@ -1,5 +1,5 @@
 import Outgoing from '../../outgoing';
-import { Message } from '../message';
+import { Message, MessageType, MessageTypes } from '../message';
 
   // tslint:disable:variable-name
 
@@ -17,7 +17,6 @@ export interface LinkButton {
   url: string;
 }
 
-
 export class ButtonMessage implements Message {
   protected _text = '';
   protected _buttons: Array<Button> = [];
@@ -28,10 +27,12 @@ export class ButtonMessage implements Message {
     return this;
   }
 
-  set type(newType: string) {}
+  set type(newType: MessageType) {
+    return;
+  }
 
-  get type() {
-    return 'button';
+  get type(): MessageType {
+    return MessageTypes.button;
   }
 
   public text(): string;

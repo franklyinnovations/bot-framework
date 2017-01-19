@@ -1,12 +1,12 @@
 /// <reference types="bluebird" />
 import { PlatformMiddleware } from '../types/platform';
 import { Message } from '../types/bot';
-import { User } from '../types/user';
+import { User, BasicUser } from '../types/user';
 import * as Promise from 'bluebird';
 import Botler from '../bot';
 export default class Console implements PlatformMiddleware {
     private rl;
-    protected theUser: User;
+    protected theUser: BasicUser;
     protected bot: Botler;
     constructor(bot: Botler);
     start(): Promise<this>;

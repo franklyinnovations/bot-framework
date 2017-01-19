@@ -1,4 +1,4 @@
-import { Message } from '../message';
-export interface Greeting extends Message {
-    type: 'greeting';
+import { Greeting, Message } from '../message';
+export interface GreetingMessage extends Message {
+    type: Greeting;
 }

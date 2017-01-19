@@ -1,5 +1,5 @@
 import Outgoing from '../../outgoing';
-import { Message } from '../message';
+import { Message, MessageType } from '../message';
 export declare type Button = PostbackButton | LinkButton;
 export interface PostbackButton {
     type: 'postback';
@@ -16,7 +16,7 @@ export declare class ButtonMessage implements Message {
     protected _buttons: Array<Button>;
     protected _outgoing: Outgoing;
     constructor(outgoing: Outgoing);
-    type: string;
+    type: MessageType;
     text(): string;
     text(newText: string): this;
     addButton(newButton: Button): this;

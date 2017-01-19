@@ -1,6 +1,6 @@
 /// <reference types="bluebird" />
-import { UserMiddleware, User, BasicUser } from '../types/user';
 import * as Promise from 'bluebird';
+import { UserMiddleware, User, BasicUser } from '../types/user';
 import Botler from '../bot';
 export default class Memory implements UserMiddleware {
     private users;

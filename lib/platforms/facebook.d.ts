@@ -1,9 +1,11 @@
 /// <reference types="bluebird" />
-import { PlatformMiddleware } from '../types/platform';
-import { Message } from '../types/bot';
-import Botler from '../bot';
-import { User } from '../types/user';
 import * as Promise from 'bluebird';
+import * as FacebookTypes from 'facebook-sendapi-types';
+import { Message } from '../types/bot';
+import * as Messages from '../types/message';
+import { PlatformMiddleware } from '../types/platform';
+import { User } from '../types/user';
+import Botler from '../bot';
 export default class Facbook implements PlatformMiddleware {
     protected bot: Botler;
     private port;
@@ -11,6 +13,7 @@ export default class Facbook implements PlatformMiddleware {
     private expressApp;
     private server;
     private verifyToken;
+    private FBSendAPI;
     constructor(botler: Botler, port?: number, route?: string, verifyToken?: string);
     start(): Promise<this>;
     stop(): Promise<this>;
@@ -19,3 +22,4 @@ export default class Facbook implements PlatformMiddleware {
     private processPostback(user, event);
     private processText(user, event);
 }
+export declare function mapInternalToFB<M extends Messages.Message>(message: M): FacebookTypes.MessengerMessage;

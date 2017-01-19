@@ -1,7 +1,7 @@
 /// <reference types="bluebird" />
+import * as Promise from 'bluebird';
 import { Message } from './message';
 import { User } from './user';
-import * as Promise from 'bluebird';
 export declare class PlatformMiddleware {
     start: () => Promise<this>;
     stop: () => Promise<this>;

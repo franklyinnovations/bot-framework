@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "typings": "lib/index",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && webpack",
     "test": "npm run build && mocha",
     "prepublish": "npm run build && node lib/compile"
   },
@@ -37,9 +37,17 @@
     "@types/lodash": "^4.14.37",
     "@types/natural": "^0.2.31",
     "@types/node": "^6.0.45",
+    "@types/react": "^15.0.0",
+    "@types/react-dom": "^0.14.20",
+    "awesome-typescript-loader": "^3.0.0-beta.18",
     "chai": "^3.5.0",
+    "copy-webpack-plugin": "^4.0.1",
     "mocha": "^2.5.3",
-    "typescript": "^2.1"
+    "react": "^15.4.2",
+    "react-dom": "^15.4.2",
+    "source-map-loader": "^0.1.6",
+    "typescript": "^2.1.5",
+    "webpack": "^1.14.0"
   },
   "preferGlobal": true
 }

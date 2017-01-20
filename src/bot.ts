@@ -148,7 +148,7 @@ export default class Botler {
           message: message,
           user: user,
         };
-        return this._process(user, request, response);
+        return this._process(user, request, response, true);
       })
       .then(() => this.userMiddleware.saveUser(user))
       .then(() => { return; });
@@ -160,7 +160,7 @@ export default class Botler {
       .then(_.compact);
   }
 
-  private _process(user: User, request: Incoming, response: Outgoing): Promise<void> {
+  private _process(user: User, request: Incoming, response: Outgoing, directCall: boolean = false): Promise<void> {
     return Promise.resolve()
       .then(() => {
         const blankScript = function() { return Promise.resolve(); };
@@ -171,7 +171,7 @@ export default class Botler {
           }.bind(this);
         }
 
-        if (request.message.type === 'greeting' && user.script === null) {
+        if (request.message.type === 'greeting' && user.script === null && directCall === true) {
           if (this.greetingScript) {
             return Promise.resolve()
               .then(() => this.greetingScript(user, response))
@@ -185,7 +185,7 @@ export default class Botler {
             user.scriptStage = -1;
           }
         }
-        if (user.script != null && this.scripts[user.script]) {
+        if (user.script != null && user.script !== DEFAULT_SCRIPT && this.scripts[user.script]) {
           return this.scripts[user.script].run(request, response, nextScript);
         } else if (this.scripts[DEFAULT_SCRIPT]) {
           return this.scripts[DEFAULT_SCRIPT].run(request, response, blankScript, user.scriptStage);

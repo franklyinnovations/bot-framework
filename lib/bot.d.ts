@@ -35,5 +35,5 @@ export default class Botler {
     processGreeting(user: BasicUser): Promise<void>;
     processMessage(basicUser: BasicUser, message: IncomingMessage): Promise<void>;
     private getIntents(user, message);
-    private _process(user, request, response);
+    private _process(user, request, response, directCall?);
 }

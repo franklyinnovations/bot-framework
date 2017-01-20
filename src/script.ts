@@ -116,7 +116,6 @@ export default class Script {
     const topic = incoming.intent.topic;
     const action = incoming.intent.action;
 
-    console.log(`run step ${step}`);
     const top = _.slice(this.dialogs, 0, Math.max(0, step));
     const bottom = _.slice(this.dialogs, Math.max(0, step));
 
@@ -136,11 +135,8 @@ export default class Script {
       }
     });
 
-    console.log('Vd', validDialogs.length, 'Fd', forcedDialogs.length);
-
     const runUnforced = () => {
       return Promise.resolve()
-        .then(() => console.log('runniong valid'))
         .then(() => this.callScript(incoming, outgoing, validDialogs, nextScript, step));
     };
     return Promise.resolve()
@@ -148,7 +144,6 @@ export default class Script {
         if (step === -1) {
           incoming.user.scriptStage = 0;
           if (this._begin !== null) {
-            console.log('running begin');
             return this._begin(incoming, outgoing, stopFunction);
           }
         }
@@ -349,10 +344,7 @@ export default class Script {
     const nextDialogs = _.tail(dialogs);
     const currentScript = currentDialog.function;
 
-    console.log(`running step ${thisStep}`);
-
     if (currentDialog.type === 'intent' && this.filterDialog(request.intent.topic, request.intent.action)(currentDialog) === false) {
-      console.log('not a valid intent, moving on');
       return Promise.resolve(this.callScript(request, response, nextDialogs, nextScript, thisStep + 1));
     }
 

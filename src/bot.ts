@@ -173,7 +173,13 @@ export default class Botler {
 
         if (request.message.type === 'greeting' && user.script === null) {
           if (this.greetingScript) {
-            return this.greetingScript(user, response);
+            return Promise.resolve()
+              .then(() => this.greetingScript(user, response))
+              .then(() => {
+                if (this.scripts[DEFAULT_SCRIPT]) {
+                  return this.scripts[DEFAULT_SCRIPT].run(request, response, blankScript, -1);
+                }
+              });
           } else {
             user.script = null;
             user.scriptStage = -1;

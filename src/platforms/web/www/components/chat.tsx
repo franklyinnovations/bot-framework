@@ -3,13 +3,13 @@ import { Container } from 'react-fbmessenger';
 import { connect, Dispatch } from 'react-redux';
 
 import { State, Conversations } from '../redux/store';
-import { sendText } from '../redux/actions';
-
+import { sendText, sendPostback } from '../redux/actions';
 
 interface Props {
   conversation: Conversations;
   userid: string;
   sendText: (userid: string, text: string) => void;
+  sendPostback: (userid: string, payload: string) => void;
 }
 
 const mapStateToProps = function(store: State) {
@@ -22,6 +22,7 @@ const mapStateToProps = function(store: State) {
 const mapDispatchToProps = (dispatch: Dispatch<State>) => {
   return {
     sendText: (userid: string, text: string) => sendText(userid, text)(dispatch),
+    sendPostback: (userid: string, payload: string) => sendPostback(userid, payload)(dispatch),
   };
 };
 
@@ -29,23 +30,27 @@ class Chat extends React.Component<Props, undefined> {
   constructor(props: Props) {
     super(props);
     this.sendText = this.sendText.bind(this);
+    this.sendPostback = this.sendPostback.bind(this);
   }
 
-  sendText(text: string) {
-    console.log(`should sent '${text}'`);
+  private sendText(text: string) {
     this.props.sendText(this.props.userid, text);
   }
 
-  render() {
+  private sendPostback(payload: string, text: string) {
+    this.props.sendPostback(this.props.userid, payload);
+  }
+
+  public render() {
     return (
       <Container
         page_id={'0'}
         conversation = {this.props.conversation}
         persistentMenu = {null}
-        textBlurCallback = {defaultBlurCallback}
-        postbackCallback = {defaultPostbackCallback}
+        postbackCallback = {this.sendPostback}
         userTextCallback = {this.sendText}
         textFocusCallback = {defaultFocusCallback}
+        textBlurCallback = {defaultBlurCallback}
       />
     );
   }

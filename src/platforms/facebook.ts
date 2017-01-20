@@ -14,7 +14,6 @@ import { BasicUser, User } from '../types/user';
 
 import Botler from '../bot';
 
-
 interface WebhookCallback {
   object: 'page';
   entry: Array<{
@@ -137,10 +136,38 @@ export default class Facbook implements PlatformMiddleware {
 export function mapInternalToFB<M extends Messages.Message>(message: M): FacebookTypes.MessengerMessage {
   switch (message.type) {
     case 'text':
-      return FacebookAPI.exportTextMessage((<Messages.TextMessage>(message as any)).text);
+      return FacebookAPI.exportTextMessage((<Messages.TextMessage> (message as any)).text);
+
+    case 'button': {
+      const buttonMessage: Messages.ButtonMessage = <any> message;
+      const FBButtons: Array<FacebookTypes.MessengerButton> = buttonMessage.buttons.map(button => {
+        switch (button.type) {
+          case 'postback': {
+            const fb: FacebookTypes.MessengerPostbackButton = {
+              type: 'postback',
+              title: button.text,
+              payload: button.payload,
+            };
+            return fb;
+          }
+
+          case 'url': {
+            const fb: FacebookTypes.MessengerButton = {
+              type: 'web_url',
+              title: button.text,
+              url: button.url,
+            };
+            return fb;
+          }
+
+          default:
+            throw new Error('Unknown button type');
+        }
+      });
+      return FacebookAPI.exportButtonMessage(buttonMessage.text(), FBButtons);
+    }
 
     default:
       return null;
   }
 }
-

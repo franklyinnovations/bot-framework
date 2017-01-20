@@ -9,13 +9,25 @@ import * as _ from 'lodash';
 import Botler from '../bot';
 import { mapInternalToFB } from './facebook';
 
-import { Message, TextMessage } from '../types/message';
+import { Message, TextMessage, IncomingMessage, PostbackMessage } from '../types/message';
 import { PlatformMiddleware } from '../types/platform';
 import { BasicUser, User } from '../types/user';
 import { State } from './web/www/redux/store';
 
 const savedConversation: { [id: string]: Array<SendTypes.MessengerPayload> } = {};
 const PAGEID = 'page';
+
+export interface WebPostbackMessage {
+  type: 'postback';
+  userid: string;
+  payload: string;
+}
+
+export interface WebTextMessage {
+  type: 'text';
+  userid: string;
+  text: string;
+}
 
 export default class Web implements PlatformMiddleware {
   private bot: Botler;
@@ -29,6 +41,7 @@ export default class Web implements PlatformMiddleware {
     this.localApp = Express();
     this.localApp.use(bodyParser.json());
     this.localApp.use(Express.static(`${__dirname}/web`));
+
     this.localApp.post('/api/conversation', (req, res, next) => {
       const user: BasicUser = {
         id: '0',
@@ -41,6 +54,7 @@ export default class Web implements PlatformMiddleware {
       return this.getUserConversation(req.body.userid.toString())
         .then((conversation) => res.send(conversation));
     });
+
     this.localApp.post('/api/receive', (req, res, next) => {
       // send to bot
       const user: BasicUser = {
@@ -48,15 +62,32 @@ export default class Web implements PlatformMiddleware {
         platform: 'web',
         _platform: this,
       };
-      const message: TextMessage = {
-        type: 'text',
-        text: req.body.text,
-      };
+
+      let message: IncomingMessage;
+      switch ((<WebPostbackMessage | WebTextMessage> req.body).type) {
+        case 'postback':
+          message = {
+            type: 'postback',
+            payload: req.body.payload,
+          } as PostbackMessage;
+          break;
+
+        case 'text':
+          message = {
+            type: 'text',
+            text: req.body.text,
+          } as TextMessage;
+          break;
+
+        default:
+          throw new Error('bad message type');
+      }
+
       const fbMessage: SendTypes.MessengerPayload = {
         recipient: {
           id: PAGEID,
         },
-        message: mapInternalToFB(message)
+        message: mapInternalToFB(message),
       };
 
       _.update(savedConversation, [`${user.platform}${user.id.toString()}`], (n: Array<SendTypes.MessengerPayload>) => {
@@ -65,6 +96,7 @@ export default class Web implements PlatformMiddleware {
 
       this.bot.processMessage(user, message);
     });
+
     this.localApp.post('/api/start', (req, res, next) => {
       const user: BasicUser = {
         id: '0',
@@ -121,7 +153,7 @@ export default class Web implements PlatformMiddleware {
       recipient: {
         id: user.id,
       },
-      message: mapInternalToFB(message)
+      message: mapInternalToFB(message),
     };
     _.update(savedConversation, [`${user.platform}${user.id.toString()}`], (n: Array<SendTypes.MessengerPayload>) => {
       return n ? n.concat(fbMessage) : [ fbMessage ];
@@ -136,7 +168,7 @@ export default class Web implements PlatformMiddleware {
       id: userId,
       platform: 'web',
     };
-    let conversation: Array<SendTypes.MessengerPayload> = savedConversation[`${user.platform}${user.id.toString()}`]
+    let conversation: Array<SendTypes.MessengerPayload> = savedConversation[`${user.platform}${user.id.toString()}`];
 
     return Promise.resolve(conversation);
   }

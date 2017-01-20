@@ -2,6 +2,7 @@ import { Action, Store, Dispatch } from 'redux';
 import * as fetch from 'isomorphic-fetch';
 
 import { State, Conversations } from './store';
+import { WebPostbackMessage, WebTextMessage } from '../../../web';
 
 export type Actions = SetState | SetConversation;
 
@@ -74,6 +75,11 @@ export function getConversation(store: Store<State>) {
 
 export function sendText(userid: string, text: string) {
   return (dispatch: Dispatch<State>) => {
+    const message: WebTextMessage = {
+      userid: userid,
+      text: text,
+      type: 'text',
+    };
     fetch('/api/receive', {
       method: 'POST',
       headers: {
@@ -81,10 +87,7 @@ export function sendText(userid: string, text: string) {
         'Content-Type': 'application/json',
       },
       credentials: 'same-origin',
-      body: JSON.stringify({
-        userid: userid,
-        text: text,
-      }),
+      body: JSON.stringify(message),
     })
     .then(checkFetchStatus)
     .then(parseJSON)
@@ -94,5 +97,32 @@ export function sendText(userid: string, text: string) {
     .catch((err: Error) => {
       console.log(err);
     });
-  }
+  };
+}
+
+export function sendPostback(userid: string, payload: string) {
+  return (dispatch: Dispatch<State>) => {
+    const message: WebPostbackMessage = {
+      userid: userid,
+      payload: payload,
+      type: 'postback',
+    };
+    fetch('/api/receive', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(message),
+    })
+    .then(checkFetchStatus)
+    .then(parseJSON)
+    .then((response: any) => {
+      return;
+    })
+    .catch((err: Error) => {
+      console.log(err);
+    });
+  };
 }

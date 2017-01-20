@@ -43,7 +43,7 @@ export default class Outgoing implements OutgoingInterface {
     };
     this.promise = this.promise.then(() => this.user._platform.send(this.user, textMessage)).catch((err: Error) => {
       console.log('err in ourgoing');
-    })
+    });
     return this;
   }
 

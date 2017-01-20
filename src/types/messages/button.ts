@@ -5,20 +5,24 @@ import { Message, MessageType, MessageTypes } from '../message';
 
 export type Button = PostbackButton | LinkButton;
 
+export type PostbackType = 'postback';
+export type LinkType = 'url';
+export type ButtonType = PostbackType | LinkType;
+
 export interface PostbackButton {
-  type: 'postback';
+  type: PostbackType;
   text: string;
   payload: string;
 }
 
 export interface LinkButton {
-  type: 'url';
+  type: LinkType;
   text: string;
   url: string;
 }
 
 export class ButtonMessage implements Message {
-  protected _text = '';
+  public _text = '';
   protected _buttons: Array<Button> = [];
   protected _outgoing: Outgoing;
 
@@ -45,8 +49,48 @@ export class ButtonMessage implements Message {
     return this;
   }
 
-  public addButton(newButton: Button): this {
-    this._buttons.push(newButton);
+  get buttons(): Array<Button> {
+    return this._buttons;
+  }
+
+  public addButton(ewButton: Button): this;
+  public addButton(type: PostbackType, text: string, payload: string): this;
+  public addButton(type: LinkType, text: string, url: string): this;
+  public addButton(): this {
+    switch (arguments.length) {
+      case 1:
+        this._buttons.push(arguments[0]);
+        break;
+      case 3:
+        switch (arguments[0]) {
+          case'postback': {
+            const button: PostbackButton = {
+              type: 'postback',
+              text: arguments[1],
+              payload: arguments[2],
+            };
+            this._buttons.push(button);
+            break;
+          }
+
+          case 'url': {
+            const button: LinkButton = {
+              type: 'url',
+              text: arguments[1],
+              url: arguments[2],
+            };
+            this._buttons.push(button);
+            break;
+          }
+
+          default:
+            throw new Error('bad type of button');
+        }
+        break;
+
+      default:
+        throw new Error('bad number of arguments');
+    }
     return this;
   }
 

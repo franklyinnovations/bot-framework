@@ -23,6 +23,12 @@
     ],
     "only-arrow-functions": [
       false
+    ],
+    "max-classes-per-file": [
+      false
+    ],
+    "interface-name": [
+      false
     ]
   }
 }

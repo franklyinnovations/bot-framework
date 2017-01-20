@@ -13,16 +13,19 @@ export default class Memory implements UserMiddleware {
   }
 
   public getUser(user: BasicUser): Promise<User> {
-    const normalizedUserId = `${user.platform}${user.id.toString()}`;
+    const normalizedUserId = normalized(user);
     if (!_.has(this.users, [user.platform, normalizedUserId])) {
-      return Promise.resolve(_.merge(this.bot.createEmptyUser(), user));
+      return Promise.reject(new Error('User does not exist'));
     }
     return Promise.resolve(this.users[user.platform][normalizedUserId]);
   }
 
   public saveUser<U extends User>(user: U): Promise<U> {
-    _.set(this.users, [user.platform, `${user.platform}${user.id.toString()}`], user);
-    console.log(util.inspect(this.users));
+    _.set(this.users, [user.platform, normalized(user)], user);
     return Promise.resolve(user);
   }
+}
+
+function normalized(user: BasicUser) {
+  return `${user.platform}${user.id.toString()}`;
 }

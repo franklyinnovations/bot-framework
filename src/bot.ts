@@ -133,6 +133,7 @@ export default class Botler {
     let request: Incoming = null;
     let response: Outgoing = null;
     return this.userMiddleware.getUser(basicUser)
+      .catch((err: Error) => _.merge(this.createEmptyUser(), basicUser))
       .then(completeUser => {
         completeUser.conversation = completeUser.conversation.concat(message);
         user = completeUser;

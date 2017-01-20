@@ -1,22 +1,46 @@
 import * as _ from 'lodash';
-import { Incoming, DialogFunction, Outgoing } from './types/bot';
-import { MessageType, Text as TextMessage } from './types/message'
 import * as Promise from 'bluebird';
+
+import { Incoming, DialogFunction, Outgoing } from './types/bot';
+import { MessageType, Text as TextMessage } from './types/message';
+
 import Botler from './bot';
 
-interface DialogShell {
-  intent: {
-    topic: string;
-    action: string;
-  };
+interface Dialog {
+  type: 'dialog';
+  function: DialogFunction;
+  force: boolean;
+  name: string;
+}
+
+interface Button {
+  type: 'button';
+  function: DialogFunction;
+  force: boolean;
+  button: Array<string>;
+}
+
+interface Expect {
+  type: 'expect';
+  function: DialogFunction;
+  force: boolean;
   expect: {
     type: MessageType;
     catch: DialogFunction;
   };
+}
+
+interface Match {
+  type: 'match';
   function: DialogFunction;
   force: boolean;
-  name: string;
-};
+  intent: {
+    topic: string;
+    action: string;
+  };
+}
+
+type DialogShell = Dialog | Button | Expect | Match;
 
 export enum StopScriptReasons {
   Called,
@@ -29,7 +53,7 @@ export class StopException extends Error {
   constructor(reason: StopScriptReasons) {
     super(`Script stopped due to ${StopScriptReasons[reason]}`);
     // Set the prototype explicitly.
-    (<any>Object).setPrototypeOf(this, StopException.prototype);
+    (<any> Object).setPrototypeOf(this, StopException.prototype);
     this.reason = reason;
   }
 }
@@ -44,27 +68,44 @@ export class EndScriptException extends Error {
   constructor(reason: EndScriptReasons) {
     super(`End of script due to ${EndScriptReasons[reason]}`);
     // Set the prototype explicitly.
-    (<any>Object).setPrototypeOf(this, EndScriptException.prototype);
-    this.reason = reason
+    (<any> Object).setPrototypeOf(this, EndScriptException.prototype);
+    this.reason = reason;
   }
 }
+
+enum NextCall {
+  match,
+  addDialog,
+  expect,
+  button,
+}
+
+export type FunctionAlways = {
+  (...args: any[]): (...args: any[]) => this;
+  always: (...args: any[]) => Script;
+};
 
 export default class Script {
   private dialogs: Array<DialogShell> = [];
   private name: string;
   private bot: Botler;
+  // tslint:disable-next-line:variable-name
   private _begin: DialogFunction = null;
+  private nextCall: NextCall = null;
+  public button: FunctionAlways;
 
   constructor(bot: Botler, scriptName: string) {
     this.bot = bot;
     this.name = scriptName;
+    this.button = this._button.bind(this);
+    this.button.always = this._buttonAlways.bind(this);
     return this;
   }
 
   public run(incoming: Incoming, outgoing: Outgoing, nextScript: () => Promise<void>) {
     const topic = incoming.intent.topic;
     const action = incoming.intent.action;
-    
+
     const top = _.slice(this.dialogs, 0, Math.max(0, incoming.user.scriptStage));
     const bottom = _.slice(this.dialogs, Math.max(0, incoming.user.scriptStage));
 
@@ -96,13 +137,13 @@ export default class Script {
       name = arguments[0];
       dialogFunction = arguments[1];
     }
-    this.dialogs.push({
+    const dialog: Dialog = {
+      type: 'dialog',
       force: false,
       function: dialogFunction.bind(this),
-      intent: null,
-      expect: null,
       name: name,
-    });
+    };
+    this.dialogs.push(dialog);
     return this;
   }
 
@@ -111,7 +152,7 @@ export default class Script {
   public expect(): this {
     let type: MessageType = 'text';
     let theFunction: DialogFunction =  null;
-    switch(arguments.length) {
+    switch (arguments.length) {
       case 1:
         theFunction = arguments[0];
         break;
@@ -123,15 +164,14 @@ export default class Script {
         throw new Error('Bad function arguments');
     }
 
-    const dialog: DialogShell = {
-      intent: null,
+    const dialog: Expect = {
+      type: 'expect',
       expect: {
         type: type,
         catch: null,
       },
       function: theFunction.bind(this),
       force: false,
-      name: null,
     };
     this.dialogs.push(dialog);
     return this;
@@ -139,6 +179,9 @@ export default class Script {
 
   public catch(dialogFunction: DialogFunction): this {
     const lastDialog: DialogShell = _.last(this.dialogs);
+    if (lastDialog.type !== 'expect') {
+      throw new Error('catch must be after expect');
+    }
     if (lastDialog.expect !== null) {
       lastDialog.expect.catch = dialogFunction.bind(this);
     }
@@ -179,19 +222,52 @@ export default class Script {
         throw new Error('Incorect argument count');
     }
 
-    // the magic
-    this.dialogs.push({
+    const dialog: Match = {
+      type: 'match',
       force: false,
       function: theFunction.bind(this),
       intent: intent,
-      expect: null,
-      name: null,
-    });
+    };
+    this.dialogs.push(dialog);
+    return this;
+  }
+
+  private _button(): this {
+    let buttonPayload: string[] = null;
+    let theFunction: DialogFunction = null;
+    switch (arguments.length) {
+      case 2:
+        buttonPayload = arguments[0];
+        theFunction = arguments[1];
+        break;
+
+      default:
+        throw new Error('bad arguments');
+    }
+
+    const dialog: Button = {
+      type: 'button',
+      force: false,
+      function: theFunction.bind(this),
+      button: buttonPayload,
+    };
+    this.dialogs.push(dialog);
+    return this;
+  }
+
+  private _buttonAlways(): this {
+    this._button.apply(this, arguments);
+    this.always();
+    return this;
+  }
+
+  private always() {
+    _.last(this.dialogs).force = true;
     return this;
   }
 
   get force(): this {
-    _.last(this.dialogs).force = true;
+    this.always();
     return this;
   }
 
@@ -202,6 +278,10 @@ export default class Script {
 
   private filterDialog(topic: string, action: string) {
     return (shell: DialogShell) => {
+      if (shell.type !== 'match') {
+        return;
+      }
+
       if (shell.intent === null) {
         return true;
       }
@@ -220,7 +300,7 @@ export default class Script {
       return nextScript();
     }
 
-    const currentDialog = _.head(dialogs)
+    const currentDialog = _.head(dialogs);
     const nextDialogs = _.tail(dialogs);
     const currentScript = currentDialog.function;
 
@@ -230,8 +310,17 @@ export default class Script {
       return Promise.resolve(this.callScript(request, response, nextDialogs, nextScript, thisStep + 1));
     }
 
+    // tslint:disable-next-line:variable-name
     const __this = this;
     return Promise.resolve()
+      .then(() => {
+        if (currentDialog.type === 'expect') {
+          if (currentDialog.expect.type !== request.message.type) {
+            console.log('expect type mismatch');
+            return stopFunction(StopScriptReasons.ExpectCaught);
+          }
+        }
+      })
       .then(() => currentScript(request, response, stopFunction))
       .then(() => {
         if (nextDialogs.length === 0) {
@@ -239,12 +328,13 @@ export default class Script {
         }
         // console.log('thisStep', thisStep, Math.max(request.user.scriptStage, thisStep + 1));
         request.user.scriptStage = Math.max(request.user.scriptStage, thisStep + 1);
-        if (_.head(nextDialogs).expect === null) {
+        const dialog = _.head(nextDialogs);
+        if (dialog.type === 'dialog' || dialog.type === 'match') {
           return __this.callScript(request, response, nextDialogs, nextScript, thisStep + 1);
         }
       })
       .catch((err: Error) => {
-        if (err instanceof StopException && currentDialog.expect !== null && currentDialog.expect.catch !== null) {
+        if (err instanceof StopException && currentDialog.type === 'expect' && currentDialog.expect !== null && currentDialog.expect.catch !== null) {
           return Promise.resolve()
             .then(() => currentDialog.expect.catch(request, response, stopFunction))
             .then(() => stopFunction(StopScriptReasons.ExpectCaught));

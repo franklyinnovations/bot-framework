@@ -1,9 +1,11 @@
 import * as _ from 'lodash';
 import * as Promise from 'bluebird';
-import * as Responses from './responses';
 import * as util from 'util';
+
+import * as Responses from './responses';
 import { PlatformMiddleware } from './types/platform';
-import { IncomingMessage, Message, TextMessage, GreetingMessage } from './types/message';
+import { IncomingMessage, Message, TextMessage, GreetingMessage, PostbackMessage } from './types/message';
+import { Button } from './types/messages/button';
 import { User } from './types/user';
 import { TestPlatform } from './platforms/';
 
@@ -37,15 +39,29 @@ export default class Tester {
     this.userId = userId;
   }
 
-  public expectTextResponse(allowedPhrases: Array<string> | string): this {
+  public expectText(allowedPhrases: Array<string> | string): this {
     this.script.push(new Responses.TextResponse(allowedPhrases));
     return this;
   }
 
-  public sendTextMessage(text: string): this {
+  public expectButtons(text: string, button: Array<Button>): this {
+    this.script.push(new Responses.ButtonTemplateResponse([text], button));
+    return this;
+  }
+
+  public sendText(text: string): this {
     const message: TextMessage = {
       type: 'text',
       text: text,
+    };
+    this.script.push(message);
+    return this;
+  }
+
+  public sendButtonClick(payload: string): this {
+    const message: PostbackMessage = {
+      type: 'postback',
+      payload: payload,
     };
     this.script.push(message);
     return this;

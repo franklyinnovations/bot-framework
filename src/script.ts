@@ -2,45 +2,44 @@ import * as _ from 'lodash';
 import * as Promise from 'bluebird';
 
 import { Incoming, DialogFunction, Outgoing } from './types/bot';
-import { MessageType, Text as TextMessage } from './types/message';
+import { MessageType, MessageTypes } from './types/message';
 
 import Botler from './bot';
 
-interface Dialog {
-  type: 'dialog';
+interface DialogPrototype {
   function: DialogFunction;
   force: boolean;
+  blocking: boolean;
+}
+
+interface Dialog extends DialogPrototype {
+  type: 'dialog';
   name: string;
 }
 
-interface Button {
+interface Button extends DialogPrototype {
   type: 'button';
-  function: DialogFunction;
-  force: boolean;
-  button: Array<string>;
+  button: string;
 }
 
-interface Expect {
+interface Expect extends DialogPrototype {
   type: 'expect';
-  function: DialogFunction;
-  force: boolean;
   expect: {
     type: MessageType;
     catch: DialogFunction;
   };
+  blocking: true;
 }
 
-interface Match {
-  type: 'match';
-  function: DialogFunction;
-  force: boolean;
+interface Intent extends DialogPrototype {
+  type: 'intent';
   intent: {
     topic: string;
     action: string;
   };
 }
 
-type DialogShell = Dialog | Button | Expect | Match;
+type DialogShell = Dialog | Button | Expect | Intent;
 
 export enum StopScriptReasons {
   Called,
@@ -73,16 +72,21 @@ export class EndScriptException extends Error {
   }
 }
 
-enum NextCall {
-  match,
-  addDialog,
-  expect,
-  button,
-}
-
-export type FunctionAlways = {
+export type FunctionShell = {
   (...args: any[]): (...args: any[]) => this;
-  always: (...args: any[]) => Script;
+};
+
+export type DotAlways = {
+  always: (...args: any[]) => this;
+};
+
+export type ExpectButton = (dialogFunction: DialogFunction) => this;
+export type ExpectButtonWith = (postback: string, dialogFunction: DialogFunction) => this;
+
+export type ExpectInput = {
+  (...args: any[]): (...args: any[]) => this;
+  text: (dialogFunction: DialogFunction) => this;
+  button: ExpectButton | ExpectButtonWith;
 };
 
 export default class Script {
@@ -91,36 +95,60 @@ export default class Script {
   private bot: Botler;
   // tslint:disable-next-line:variable-name
   private _begin: DialogFunction = null;
-  private nextCall: NextCall = null;
-  public button: FunctionAlways;
+  public button: FunctionShell & DotAlways;
+  public expect: ExpectInput;
+  public intent: FunctionShell & DotAlways;;
 
   constructor(bot: Botler, scriptName: string) {
     this.bot = bot;
     this.name = scriptName;
     this.button = this._button.bind(this);
     this.button.always = this._buttonAlways.bind(this);
+    this.expect = this._expect.bind(this);
+    this.expect.text = this.expectText.bind(this);
+    this.expect.button = this._buttonExpect.bind(this);
+    this.intent = this._intent.bind(this);
+    this.intent.always = this._intentAlways.bind(this);
     return this;
   }
 
-  public run(incoming: Incoming, outgoing: Outgoing, nextScript: () => Promise<void>) {
+  public run(incoming: Incoming, outgoing: Outgoing, nextScript: () => Promise<void>, step: number = incoming.user.scriptStage) {
     const topic = incoming.intent.topic;
     const action = incoming.intent.action;
 
-    const top = _.slice(this.dialogs, 0, Math.max(0, incoming.user.scriptStage));
-    const bottom = _.slice(this.dialogs, Math.max(0, incoming.user.scriptStage));
+    console.log(`run step ${step}`);
+    const top = _.slice(this.dialogs, 0, Math.max(0, step));
+    const bottom = _.slice(this.dialogs, Math.max(0, step));
 
     let validDialogs: Array<DialogShell> = bottom;
-    let forcedDialogs: Array<DialogShell> = top.filter((shell) => shell.force).filter(this.filterDialog(topic, action));
+    let forcedDialogs: Array<DialogShell> = top.filter((shell) => shell.force).filter((shell) => {
+      switch (shell.type) {
+        case 'intent':
+          return this.filterDialog(topic, action)(shell);
+        case 'dialog':
+          return shell.force;
+        case 'button':
+          return shell.force;
+        case 'expect':
+          return false;
+        default:
+          throw new Error('Unknown Dialog type');
+      }
+    });
+
+    console.log('Vd', validDialogs.length, 'Fd', forcedDialogs.length);
 
     const runUnforced = () => {
       return Promise.resolve()
-        .then(() => this.callScript(incoming, outgoing, validDialogs, nextScript, incoming.user.scriptStage));
+        .then(() => console.log('runniong valid'))
+        .then(() => this.callScript(incoming, outgoing, validDialogs, nextScript, step));
     };
     return Promise.resolve()
       .then(() => {
-        if (incoming.user.scriptStage === -1) {
+        if (step === -1) {
           incoming.user.scriptStage = 0;
           if (this._begin !== null) {
+            console.log('running begin');
             return this._begin(incoming, outgoing, stopFunction);
           }
         }
@@ -128,9 +156,14 @@ export default class Script {
       .then(() => this.callScript(incoming, outgoing, forcedDialogs, runUnforced, 0));
   }
 
-  public addDialog(dialogFunction: DialogFunction): this;
-  public addDialog(name: string, dialogFunction: DialogFunction): this;
-  public addDialog(): this {
+  public begin(dialogFunction: DialogFunction): this {
+    this._begin = dialogFunction;
+    return this;
+  }
+
+  public dialog(dialogFunction: DialogFunction): this;
+  public dialog(name: string, dialogFunction: DialogFunction): this;
+  public dialog(): this {
     let name: string = null;
     let dialogFunction: DialogFunction = arguments[0];
     if (arguments.length === 2) {
@@ -142,15 +175,13 @@ export default class Script {
       force: false,
       function: dialogFunction.bind(this),
       name: name,
+      blocking: false,
     };
     this.dialogs.push(dialog);
     return this;
   }
 
-  public expect(dialogFunction: DialogFunction): this;
-  public expect(type: MessageType, dialogFunction: DialogFunction): this;
-  public expect(): this {
-    let type: MessageType = 'text';
+  private _expect(type: MessageType, dialogFunction: DialogFunction): this {
     let theFunction: DialogFunction =  null;
     switch (arguments.length) {
       case 1:
@@ -172,9 +203,15 @@ export default class Script {
       },
       function: theFunction.bind(this),
       force: false,
+      blocking: true,
     };
     this.dialogs.push(dialog);
     return this;
+  }
+
+
+  private expectText(dialogFunction: DialogFunction): this {
+    return this._expect(MessageTypes.text, dialogFunction);
   }
 
   public catch(dialogFunction: DialogFunction): this {
@@ -188,10 +225,10 @@ export default class Script {
     return this;
   }
 
-  public match(dialogFunction: DialogFunction): this;
-  public match(topic: string, dialogFunction: DialogFunction): this;
-  public match(topic: string, action: string, dialogFunction: DialogFunction): this;
-  public match(): this {
+  private _intent(dialogFunction: DialogFunction): this;
+  private _intent(topic: string, dialogFunction: DialogFunction): this;
+  private _intent(topic: string, action: string, dialogFunction: DialogFunction): this;
+  private _intent(): this {
     let intent = null;
     let theFunction: DialogFunction = null;
     switch (arguments.length) {
@@ -222,20 +259,34 @@ export default class Script {
         throw new Error('Incorect argument count');
     }
 
-    const dialog: Match = {
-      type: 'match',
+    const dialog: Intent = {
+      type: 'intent',
       force: false,
       function: theFunction.bind(this),
       intent: intent,
+      blocking: false,
     };
     this.dialogs.push(dialog);
     return this;
   }
 
+  private _intentAlways() {
+    this._intent.apply(this, arguments);
+    _.last(this.dialogs).force = true;
+    return this;
+  }
+
+  private _button(dialogFunction: DialogFunction): this;
+  private _button(postback: string, dialogFunction: DialogFunction): this;
   private _button(): this {
-    let buttonPayload: string[] = null;
+    let buttonPayload: string = null;
     let theFunction: DialogFunction = null;
     switch (arguments.length) {
+      case 1:
+        buttonPayload = null;
+        theFunction = arguments[0];
+        break;
+
       case 2:
         buttonPayload = arguments[0];
         theFunction = arguments[1];
@@ -250,6 +301,7 @@ export default class Script {
       force: false,
       function: theFunction.bind(this),
       button: buttonPayload,
+      blocking: false,
     };
     this.dialogs.push(dialog);
     return this;
@@ -257,28 +309,21 @@ export default class Script {
 
   private _buttonAlways(): this {
     this._button.apply(this, arguments);
-    this.always();
-    return this;
-  }
-
-  private always() {
     _.last(this.dialogs).force = true;
     return this;
   }
 
-  get force(): this {
-    this.always();
-    return this;
-  }
-
-  public begin(dialogFunction: DialogFunction): this {
-    this._begin = dialogFunction;
+  private _buttonExpect(dialogFunction: DialogFunction): this;
+  private _buttonExpect(postback: string, dialogFunction: DialogFunction): this;
+  private _buttonExpect() {
+    this._button.apply(this, arguments);
+    _.last(this.dialogs).blocking = true;
     return this;
   }
 
   private filterDialog(topic: string, action: string) {
     return (shell: DialogShell) => {
-      if (shell.type !== 'match') {
+      if (shell.type !== 'intent') {
         return;
       }
 
@@ -304,10 +349,27 @@ export default class Script {
     const nextDialogs = _.tail(dialogs);
     const currentScript = currentDialog.function;
 
-    const isValid = this.filterDialog(request.intent.topic, request.intent.action);
-    if (isValid(currentDialog) === false) {
-      // console.log('not valid, move on');
+    console.log(`running step ${thisStep}`);
+
+    if (currentDialog.type === 'intent' && this.filterDialog(request.intent.topic, request.intent.action)(currentDialog) === false) {
+      console.log('not a valid intent, moving on');
       return Promise.resolve(this.callScript(request, response, nextDialogs, nextScript, thisStep + 1));
+    }
+
+    if (currentDialog.type === 'button') {
+      if (request.message.type !== 'postback') {
+        if (currentDialog.blocking === true) {
+          stopFunction();
+        } else {
+          return Promise.resolve(this.callScript(request, response, nextDialogs, nextScript, thisStep + 1));
+        }
+      } else if (request.message.type === 'postback' && request.message.payload !== currentDialog.button) {
+        if (currentDialog.blocking === true) {
+          stopFunction();
+        } else {
+          return Promise.resolve(this.callScript(request, response, nextDialogs, nextScript, thisStep + 1));
+        }
+      }
     }
 
     // tslint:disable-next-line:variable-name
@@ -329,7 +391,7 @@ export default class Script {
         // console.log('thisStep', thisStep, Math.max(request.user.scriptStage, thisStep + 1));
         request.user.scriptStage = Math.max(request.user.scriptStage, thisStep + 1);
         const dialog = _.head(nextDialogs);
-        if (dialog.type === 'dialog' || dialog.type === 'match') {
+        if (dialog.type === 'dialog' || dialog.type === 'intent') {
           return __this.callScript(request, response, nextDialogs, nextScript, thisStep + 1);
         }
       })

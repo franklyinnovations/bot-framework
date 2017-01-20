@@ -56,6 +56,7 @@ export default class Console implements PlatformMiddleware {
         break;
 
       default:
+        console.log(`->`, message);
         break;
     }
     return Promise.resolve(this);

@@ -1,6 +1,7 @@
 /// <reference types="bluebird" />
 import * as Promise from 'bluebird';
 import { Message } from './types/message';
+import { Button } from './types/messages/button';
 import { TestPlatform } from './platforms/';
 export declare enum TestState {
     notStarted = 0,
@@ -22,8 +23,10 @@ export default class Tester {
     private timer;
     private checkforExtraDialogs;
     constructor(platform: TestPlatform, userId?: string);
-    expectTextResponse(allowedPhrases: Array<string> | string): this;
-    sendTextMessage(text: string): this;
+    expectText(allowedPhrases: Array<string> | string): this;
+    expectButtons(text: string, button: Array<Button>): this;
+    sendText(text: string): this;
+    sendButtonClick(payload: string): this;
     run(): Promise<void>;
     checkForTrailingDialogs(bool: boolean): this;
     private execute();

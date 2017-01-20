@@ -13,6 +13,7 @@ export default class TestPlatform implements PlatformMiddleware {
 
   constructor(bot: Botler) {
     this.bot = bot;
+    return this;
   }
 
   public start() {

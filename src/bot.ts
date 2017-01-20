@@ -166,22 +166,25 @@ export default class Botler {
         const blankScript = function() { return Promise.resolve(); };
         let nextScript = blankScript;
         if (this.scripts[DEFAULT_SCRIPT]) {
-          nextScript = function() { 
-            console.log('running default');
+          nextScript = function() {
             return this.scripts[DEFAULT_SCRIPT].run(request, blankScript); 
           }.bind(this);
         }
+
         if (request.message.type === 'greeting' && user.script === null) {
-          if (this.greetingScript != null) {
+          if (this.greetingScript) {
             return this.greetingScript(user, response);
+          } else {
+            user.script = null;
+            user.scriptStage = -1;
           }
-          return Promise.resolve();
-        } else if (user.script != null && this.scripts[user.script]) {
+        }
+        if (user.script != null && this.scripts[user.script]) {
           return this.scripts[user.script].run(request, response, nextScript);
         } else if (this.scripts[DEFAULT_SCRIPT]) {
-          return this.scripts[DEFAULT_SCRIPT].run(request, response, blankScript);
+          return this.scripts[DEFAULT_SCRIPT].run(request, response, blankScript, user.scriptStage);
         } else {
-          return Promise.resolve();
+          throw new Error('No idea how to chain the scripts');
         }
       })
       .catch((err: Error) => {

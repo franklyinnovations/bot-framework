@@ -29,7 +29,7 @@ export default class Botler {
   private platforms: Array<PlatformMiddleware> = [];
   private scripts: { [key: string]: Script } = {};
   private greetingScript: GreetingFunction;
-  private onErrorScript: DialogFunction = defaultErrorScript; 
+  private onErrorScript: DialogFunction = defaultErrorScript;
 
   constructor(classifierFiles: Array<string|TopicCollection> = defaultClassifierDirectories) {
     const engine = new NLPEngine(classifierFiles);
@@ -167,7 +167,7 @@ export default class Botler {
         let nextScript = blankScript;
         if (this.scripts[DEFAULT_SCRIPT]) {
           nextScript = function() {
-            return this.scripts[DEFAULT_SCRIPT].run(request, blankScript); 
+            return this.scripts[DEFAULT_SCRIPT].run(request, blankScript);
           }.bind(this);
         }
 
@@ -212,11 +212,11 @@ export default class Botler {
           console.error(err);
           return this.onErrorScript(request, response, stopFunction);
         }
-      })
+      });
   }
 }
 
 const defaultErrorScript: DialogFunction  = function(incoming: Incoming, response: Outgoing, stop: StopFunction) {
   response.sendText('Uh oh, something went wrong, can you try again?');
   return Promise.resolve();
-}
+};

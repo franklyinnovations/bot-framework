@@ -38,8 +38,8 @@ export default class TestPlatform implements PlatformMiddleware {
       id: userId,
       platform: 'testing',
       _platform: this,
-    }
-    return this.bot.processMessage(user, message)
+    };
+    return this.bot.processMessage(user, message);
   }
 
   public newTest(userId: string = `test-${_.random(999999)}`): Tester {
@@ -47,5 +47,4 @@ export default class TestPlatform implements PlatformMiddleware {
     this.testers[userId] = instance;
     return instance;
   }
-  
 }

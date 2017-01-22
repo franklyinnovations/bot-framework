@@ -97,7 +97,7 @@ export default class Script {
   private _begin: DialogFunction = null;
   public button: FunctionShell & DotAlways;
   public expect: ExpectInput;
-  public intent: FunctionShell & DotAlways;;
+  public intent: FunctionShell & DotAlways;
 
   constructor(bot: Botler, scriptName: string) {
     this.bot = bot;
@@ -203,7 +203,6 @@ export default class Script {
     this.dialogs.push(dialog);
     return this;
   }
-
 
   private expectText(dialogFunction: DialogFunction): this {
     return this._expect(MessageTypes.text, dialogFunction);

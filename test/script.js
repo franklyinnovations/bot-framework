@@ -103,3 +103,30 @@ describe('greeting -> script -> default', () => {
   });
 });
 
+describe('script loop', () => {
+  const bot = new Botler.default();
+  const tester = new Botler.Platforms.TestPlatform(bot);
+  bot.addPlatform(tester);
+  bot.start();
+
+  bot.newScript()
+    .begin((incoming, response) => {
+      response.sendText('begin');
+    })
+    .dialog((incoming, response) => {
+      response.sendText('hi');
+    });
+
+  it('run', function () {
+    return tester.newTest()
+      .expectText('begin')
+      .expectText('hi')
+      .sendText('hey you')
+      .expectText('hi')
+      .sendText('try again')
+      .expectText('hi')
+      .run();
+  });
+});
+
+

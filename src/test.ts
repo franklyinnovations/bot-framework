@@ -11,7 +11,7 @@ import { TestPlatform } from './platforms/';
 
 const greetingMessage: GreetingMessage = {
   type: 'greeting',
-}
+};
 
 export enum TestState {
   notStarted,
@@ -73,7 +73,7 @@ export default class Tester {
       savedThis.resolve = resolve;
       savedThis.reject = reject;
     });
- 
+
     this.execute();
 
     return this.publicPromise;
@@ -86,7 +86,7 @@ export default class Tester {
 
   private execute(): Promise<void> {
     let i = this.step;
-    for(i; i < this.script.length; i++) {
+    for (i; i < this.script.length; i++) {
       const nextStep = this.script[i];
       if (nextStep instanceof Responses.Response) {
         return this.thePromise;
@@ -122,7 +122,7 @@ export default class Tester {
       this.step++;
       return Promise.resolve()
         .then(() => currentStep.check(message))
-        .then(() => this.execute())
+        .then(() => this.execute());
     }
     return Promise.resolve();
   }

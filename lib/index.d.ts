@@ -6,5 +6,3 @@ import * as Platforms from './platforms';
 export { Platforms };
 import Botler from './bot';
 export default Botler;
-import Tester from './test';
-export { Tester };

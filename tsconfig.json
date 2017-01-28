@@ -5,14 +5,12 @@
         "noImplicitAny": true,
         "sourceMap": false,
         "outDir": "lib",
-        "declaration": true,
-        "jsx": "react"
+        "declaration": true
     },
     "compileOnSave": true,
     "exclude": [
         "node_modules",
-        "lib",
-        "src/platforms/web"
+        "lib"
     ],
     "include": [
       "src/**/*"

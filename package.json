@@ -22,41 +22,20 @@
   "author": "Adam Juhasz",
   "license": "MIT",
   "dependencies": {
-    "@types/bluebird": "^3.0.35",
-    "@types/body-parser": "0.0.33",
-    "@types/express": "^4.0.34",
     "bluebird": "^3.4.1",
-    "body-parser": "^1.15.2",
-    "cookie-parser": "^1.4.3",
-    "express": "^4.14.0",
-    "facebook-send-api": "^2.7.0",
-    "facebook-sendapi-types": "github:fyndme/facebook-sendapi-types",
-    "isomorphic-fetch": "^2.2.1",
     "lodash": "^4.11.0",
-    "natural": "^0.4.0",
-    "react-fbmessenger": "^1.6.1",
-    "react-redux": "^5.0.2",
-    "redux": "^3.6.0"
+    "natural": "^0.4.0"
   },
   "devDependencies": {
-    "@types/es6-promise": "0.0.32",
-    "@types/isomorphic-fetch": "0.0.31",
+    "@types/bluebird": "^3.0.35",
     "@types/lodash": "^4.14.37",
     "@types/natural": "^0.2.31",
     "@types/node": "^6.0.45",
-    "@types/react": "^15.0.0",
-    "@types/react-dom": "^0.14.20",
-    "@types/react-redux": "^4.4.35",
-    "awesome-typescript-loader": "^3.0.0-beta.18",
+    "botler-platform-testing": "botlerjs/platform-testing",
     "chai": "^3.5.0",
-    "copy-webpack-plugin": "^4.0.1",
     "mocha": "^2.5.3",
-    "react": "^15.4.2",
-    "react-dom": "^15.4.2",
-    "source-map-loader": "^0.1.6",
     "tslint": "^4.3.1",
-    "typescript": "^2.1.5",
-    "webpack": "^1.14.0"
+    "typescript": "^2.1.5"
   },
   "preferGlobal": true
 }
